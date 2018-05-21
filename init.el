@@ -23,7 +23,6 @@
 
 ;;; helm
 (unless (require 'helm nil t) (progn (package-refresh-contents) (package-install 'helm))) ;; helmは最初なのでここだけパッケージ一覧を更新している
-(unless (require 'helm-ag nil t) (package-install 'helm-ag))
 (helm-mode 1) ;helmを常に有効
 ;;(define-key helm-find-files-map (kbd "TAB") 'helm-execute-persistent-action) ;;tabはアクション選択
 (define-key global-map (kbd "M-x") 'helm-M-x) ;;M-xの検索をhelmで行う
@@ -31,7 +30,6 @@
 (define-key global-map (kbd "C-x C-f") #'helm-find-files) ;;elscreen-find-fileで置き換え予定
 (define-key global-map (kbd "C-x b") 'helm-mini)
 (define-key global-map (kbd "C-x C-b") 'helm-buffers-list)
-(define-key global-map (kbd "C-x g") 'helm-ag)
 (define-key global-map (kbd "M-y") 'helm-show-kill-ring)
 (defvar my-helm-map (make-sparse-keymap) "my original helm keymap binding F7 and C-;")
 (defalias 'my-helm-prefix my-helm-map)
@@ -46,37 +44,46 @@
 (define-key my-helm-map (kbd "f") 'helm-browse-project) ;; git内に関係するファイル全部を絞り込める
 ;; windows版だと文字コード問題が起こる
 ;; http://qiita.com/fujii_0v0/items/d6e96304e913027f48ac 時期を見てコンパイル方法を確立
-(define-key my-helm-map (kbd "g") 'helm-ag)
 
 ;;; helm-descbinds C-h bの結果を絞りこめる
 (unless (require 'helm-descbinds nil t) (package-install 'helm-descbinds))
 (helm-descbinds-mode)
 
-;;; helm-gtags
-(unless (require 'helm-gtags nil t) (package-install 'helm-gtags))
-;; Enable helm-gtags-mode
-(add-hook 'go-mode-hook (lambda () (helm-gtags-mode)))
-(add-hook 'python-mode-hook (lambda () (helm-gtags-mode)))
-(add-hook 'ruby-mode-hook (lambda () (helm-gtags-mode)))
-;; gtag setting
-(setq helm-gtags-path-style 'root)
-(setq helm-gtags-auto-update t)
-;; key bind あまり好きじゃないな C-:系に後で変える
-(add-hook 'helm-gtags-mode-hook
-          '(lambda ()
-             (local-set-key (kbd "M-g") 'helm-gtags-dwim)
-             (local-set-key (kbd "M-s") 'helm-gtags-show-stack)
-             (local-set-key (kbd "M-p") 'helm-gtags-previous-history)
-             (local-set-key (kbd "M-n") 'helm-gtags-next-history)
-             (local-set-key (kbd "M-l") 'helm-gtags-select)
-             ;;入力されたタグの定義元へジャンプ
-             ;;(local-set-key (kbd "M-t") 'helm-gtags-find-tag)
-             ;;入力タグを参照する場所へジャンプ
-             ;;(local-set-key (kbd "M-r") 'helm-gtags-find-rtag)
-             ))
+;;; silver-seacher(ag)
+;;; agが入っていればhelm-agを使う
+;;; 起点ディレクトリを変えたいときにはC-uC-xg
+;;; sudo apt-get install silver-searcher
+(when (executable-find "ag")
+  (progn
+    (unless (require 'helm-ag nil t) (package-install 'helm-ag))
+    (define-key global-map (kbd "C-x g") 'helm-ag)
+    (define-key my-helm-map (kbd "g") 'helm-ag)))
 
-;; mode-hook
-(add-hook 'c-mode-hook 'helm-gtags-mode)
+
+;;; gnu global (gtags)
+;;; gnu global がインストールされているならばhelm-gtagsを使う
+(when (executable-find "global")
+  (progn
+    (unless (require 'helm-gtags nil t) (package-install 'helm-gtags))
+    (add-hook 'go-mode-hook (lambda () (helm-gtags-mode)))
+    (add-hook 'python-mode-hook (lambda () (helm-gtags-mode)))
+    (add-hook 'ruby-mode-hook (lambda () (helm-gtags-mode)))
+    (add-hook 'c-mode-hook 'helm-gtags-mode)
+    (setq helm-gtags-path-style 'root)
+    (setq helm-gtags-auto-update t)
+    ;; key bind あまり好きじゃないな C-:系に後で変える
+    (add-hook 'helm-gtags-mode-hook
+              '(lambda ()
+                 (local-set-key (kbd "M-g") 'helm-gtags-dwim)
+                 (local-set-key (kbd "M-s") 'helm-gtags-show-stack)
+                 (local-set-key (kbd "M-p") 'helm-gtags-previous-history)
+                 (local-set-key (kbd "M-n") 'helm-gtags-next-history)
+                 (local-set-key (kbd "M-l") 'helm-gtags-select)
+                 ;;入力されたタグの定義元へジャンプ
+                 ;;(local-set-key (kbd "M-t") 'helm-gtags-find-tag)
+                 ;;入力タグを参照する場所へジャンプ
+                 ;;(local-set-key (kbd "M-r") 'helm-gtags-find-rtag)
+                 ))))
 
 ;;https://www.emacswiki.org/emacs/HelmSwoop
 ;; helmSwoopを入れる
@@ -134,10 +141,9 @@
 ;;  (if (eq 1 (length (elscreen-get-screen-list))) ;;elscreenのタブの数はこれでわかる
 
 
-;;helm-recentfにelscreenの別windowを用いようと思ったが失敗(いつかチャレンジする)
-;;(setq helm-type-file-actions (cons '("Find file elscreen" . elscreen-find-file) helm-type-file-actions))
-
 ;;; helm-elscreen
+;;; elscreenのインターフェイスをhelmにする
+;;; またhelmのactionのデフォルトをelscreenにする
 (unless (require 'helm-elscreen nil t) (package-install 'helm-elscreen))
 (setq helm-type-file-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-type-file-actions))
 (setq helm-type-buffer-actions (cons '("Find buffer elscreen" . helm-elscreen-find-buffer) helm-type-buffer-actions))
@@ -148,16 +154,22 @@
 (unless (require 'sr-speedbar nil t) (package-install 'sr-speedbar))
 (setq sr-speedbar-right-side nil)
 (define-key global-map [f8] 'sr-speedbar-toggle) ;F8キーをspeedbarのon/offにする
+;;; speedbarでhelm-ag 右ボタンメニューに入れられてない。
+(defun my/speedbar-helm-ag ()
+  "Execute helm ag on speedbar directory."
+  (interactive)
+  (helm-ag (speedbar-line-file)))
+(define-key speedbar-file-key-map "G" 'my/speedbar-helm-ag)
 
-;;; org-mode
-;;; #+ の補完をやってくれるようにする
-(defun my-org-mode-hook ()
-  (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
-(add-hook 'org-mode-hook #'my-org-mode-hook)
+
 
 ;;; org-mode
 ;;; 最新のorgmodeでditaaが動かないので ubuntu16.04付属のorgを使う
 ;;; 埋め込みは http://tanehp.ec-net.jp/heppoko-lab/prog/resource/org_mode/org_mode_memo.html が参考になる
+;;; #+ の補完をやってくれるようにする
+(defun my-org-mode-hook ()
+  (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
+(add-hook 'org-mode-hook #'my-org-mode-hook)
 ;;(require ‘org-babel-init)
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
 (setq org-log-done 'time);; DONEの時刻を記録
@@ -200,24 +212,14 @@
   nil)
 
 (defun picture-line-draw-str (h v str)
-  (cond ((/= h 0) (cond ((string= str "|") "+")
-            ((string= str "+") "+")
-            (t "-")))
-    ((/= v 0) (cond ((string= str "-") "+")
-            ((string= str "+") "+")
-            (t "|")))
-    (t str)
-    ))
+  (cond ((/= h 0) (cond ((string= str "|") "+") ((string= str "+") "+") (t "-")))
+        ((/= v 0) (cond ((string= str "-") "+") ((string= str "+") "+") (t "|")))
+        (t str)))
 
 (defun picture-line-delete-str (h v str)
-  (cond ((/= h 0) (cond ((string= str "|") "|")
-            ((string= str "+") "|")
-            (t " ")))
-    ((/= v 0) (cond ((string= str "-") "-")
-            ((string= str "+") "-")
-            (t " ")))
-    (t str)
-    ))
+  (cond ((/= h 0) (cond ((string= str "|") "|") ((string= str "+") "|") (t " ")))
+        ((/= v 0) (cond ((string= str "-") "-") ((string= str "+") "-") (t " ")))
+        (t str)))
 
 (defun picture-line-draw (num v h del)
   (let ((indent-tabs-mode nil)
@@ -229,22 +231,16 @@
     (while (>= num 0)
       (when (= num 0)
     (setq picture-vertical-step 0)
-    (setq picture-horizontal-step 0)
-    )
+    (setq picture-horizontal-step 0))
       (setq num (1- num))
       (let (str new-str)
-    (setq str
-          (if (eobp) " " (buffer-substring (point) (+ (point) 1))))
-    (setq new-str
-          (if del (picture-line-delete-str h v str)
-        (picture-line-draw-str h v str)))
-    (picture-clear-column (string-width str))
-    (picture-update-desired-column nil)
-    (picture-insert (string-to-char new-str) 1)
-    ))
+        (setq str (if (eobp) " " (buffer-substring (point) (+ (point) 1))))
+        (setq new-str (if del (picture-line-delete-str h v str) (picture-line-draw-str h v str)))
+        (picture-clear-column (string-width str))
+        (picture-update-desired-column nil)
+        (picture-insert (string-to-char new-str) 1)))
     (setq picture-vertical-step old-v)
-    (setq picture-horizontal-step old-h)
-    ))
+    (setq picture-horizontal-step old-h)))
 
 (defun picture-region-move (start end num v h)
   (let ((indent-tabs-mode nil)
@@ -260,67 +256,20 @@
     (picture-insert ?\  num)
     (picture-insert-rectangle rect nil)
     (setq picture-vertical-step old-v)
-    (setq picture-horizontal-step old-h)
-    ))
-(defun picture-region-move-right (start end num)
-  "Move a rectangle right."
-  (interactive "r\np")
-  (picture-region-move start end num 0 1))
+    (setq picture-horizontal-step old-h)))
 
-(defun picture-region-move-left (start end num)
-  "Move a rectangle left."
-  (interactive "r\np")
-  (picture-region-move start end num 0 -1))
-
-(defun picture-region-move-up (start end num)
-  "Move a rectangle up."
-  (interactive "r\np")
-  (picture-region-move start end num -1 0))
-
-(defun picture-region-move-down (start end num)
-  "Move a rectangle left."
-  (interactive "r\np")
-  (picture-region-move start end num 1 0))
-
-(defun picture-line-draw-right (n)
-  "Draw line right."
-  (interactive "p")
-  (picture-line-draw n 0 1 nil))
-
-(defun picture-line-draw-left (n)
-  "Draw line left."
-  (interactive "p")
-  (picture-line-draw n 0 -1 nil))
-
-(defun picture-line-draw-up (n)
-  "Draw line up."
-  (interactive "p")
-  (picture-line-draw n -1 0 nil))
-
-(defun picture-line-draw-down (n)
-  "Draw line down."
-  (interactive "p")
-  (picture-line-draw n 1 0 nil))
-
-(defun picture-line-delete-right (n)
-  "Delete line right."
-  (interactive "p")
-  (picture-line-draw n 0 1 t))
-
-(defun picture-line-delete-left (n)
-  "Delete line left."
-  (interactive "p")
-  (picture-line-draw n 0 -1 t))
-
-(defun picture-line-delete-up (n)
-  "Delete line up."
-  (interactive "p")
-  (picture-line-draw n -1 0 t))
-
-(defun picture-line-delete-down (n)
-  "Delete line down."
-  (interactive "p")
-  (picture-line-draw n 1 0 t))
+(defun picture-region-move-right (start end num) "Move a rectangle right." (interactive "r\np") (picture-region-move start end num 0 1))
+(defun picture-region-move-left (start end num) "Move a rectangle left." (interactive "r\np") (picture-region-move start end num 0 -1))
+(defun picture-region-move-up (start end num) "Move a rectangle up." (interactive "r\np") (picture-region-move start end num -1 0))
+(defun picture-region-move-down (start end num) "Move a rectangle left." (interactive "r\np") (picture-region-move start end num 1 0))
+(defun picture-line-draw-right (n) "Draw line right." (interactive "p") (picture-line-draw n 0 1 nil))
+(defun picture-line-draw-left (n) "Draw line left." (interactive "p") (picture-line-draw n 0 -1 nil))
+(defun picture-line-draw-up (n) "Draw line up." (interactive "p") (picture-line-draw n -1 0 nil))
+(defun picture-line-draw-down (n) "Draw line down." (interactive "p") (picture-line-draw n 1 0 nil))
+(defun picture-line-delete-right (n) "Delete line right." (interactive "p") (picture-line-draw n 0 1 t))
+(defun picture-line-delete-left (n) "Delete line left." (interactive "p") (picture-line-draw n 0 -1 t))
+(defun picture-line-delete-up (n) "Delete line up." (interactive "p") (picture-line-draw n -1 0 t))
+(defun picture-line-delete-down (n) "Delete line down." (interactive "p") (picture-line-draw n 1 0 t))
 
 
 ;;;
@@ -331,6 +280,7 @@
 ;; magit
 ;; VC(emacsのversion controlシステム)のままだとコマンド必須になるので入れる
 ;; もしかすると helm-gitにした方がいいかもしれない
+;; helm-ls-gitでもいいかも
 ;; projectile,helm-projectileとの関係上 magitはやめたほうがいいかも
 ;; (unless (require 'magit nil t) (package-install 'magit))
 ;; ;;;(unless (require 'magit-popup nil t) (package-install 'magit-popup))
@@ -352,22 +302,21 @@
 ;;; undoを木構造で表示できる
 ;;; 問題点は C-?がwindowsのC-yのredoとはちょっと違うことあくまでundoの取り消しとしてのredo
 ;;; 繰り返しはキーボードマクロつかえということか。（redoまわりは今後調整する)
+;;; undo-tree 自身はC-xuで起動
 (unless (require 'undo-tree nil t) (package-install 'undo-tree))
 (global-undo-tree-mode)
 (define-key global-map (kbd "M-/") 'undo-tree-redo) ;; C-/ がundoの反対
 ;;(define-key undo-tree-map [return] 'undo-tree-visualizer-quit) ;; RETもquitにする qを押し忘れる なんか動きおかしい
 
 ;;; 操作系の基本設定
-(show-paren-mode t)                  ; 対応する括弧を光らせる
 (setq suggest-key-bindings t)        ; キーバインドの通知(登録されているキーが有るとき教えてくれる)
 (fset 'yes-or-no-p 'y-or-n-p)        ; (yes/no) を (y/n)に
 (define-key global-map (kbd "C-^") 'help-command) ; terminal接続時にはC-hがBSになるのでC-^をとっておく
 
-;;; バックアップファイルを~/.emacs.d/backupへ(フォルダは作っておくこと)
-(setq backup-directory-alist
-      (cons (cons ".*" (expand-file-name "~/.emacs.d/backup")) backup-directory-alist)) ;バックアップ
-(setq auto-save-file-name-transforms
-      `((".*", (expand-file-name "~/.emacs.d/backup/") t))) ; 自動保存ファイル
+;;; バックアップファイルを~/.emacs.d/backupへ
+(unless (file-exists-p (expand-file-name "~/.emacs.d/backup")) (make-directory (expand-file-name "~/.emacs.d/backup")))
+(setq backup-directory-alist (cons (cons ".*" (expand-file-name "~/.emacs.d/backup")) backup-directory-alist)) ;バックアップ
+(setq auto-save-file-name-transforms `((".*", (expand-file-name "~/.emacs.d/backup/") t))) ; 自動保存ファイル
 
 ;;;カーソル位置を記憶
 ;;; 一度 M-x toggle-save-placeを実行しないと動かない？
@@ -376,10 +325,6 @@
     (progn (require 'saveplace) (setq-default save-place t));; For GNU Emacs 24.5 and older versions.
   (save-place-mode 1)) ;; For GNU Emacs 25.1 and newer versions.
 
-;;;プログラム記述系の共通設定
-(setq-default indent-tabs-mode nil) ;; tabは使ない
-(setq-default tab-width 2) ;; インデントは2文字
-(add-hook 'before-save-hook 'delete-trailing-whitespace) ;;行末スペースをsave時に自動削除
 
 ;;; tab全角スペース可視化
 (global-whitespace-mode 1)
@@ -401,15 +346,30 @@
 (define-key global-map [f6] 'next-error)
 (global-set-key (kbd "C-c @") 'next-error)
 (setq compilation-window-height 15)  ;; デフォルトは画面の下半分
-(add-to-list 'smart-compile-alist '((expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")) ;;ディレクトリごとにコンパイルコマンド変えるときこれ
 (setq compilation-scroll-output t)
+
+;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
+(if (file-exists-p (expand-file-name "~/sptv"))
+    (add-to-list 'smart-compile-alist '((expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
+
+
+;;;プログラム記述系の共通設定
+;; モード毎に設定したほうが良いかも
+(setq-default indent-tabs-mode nil) ;; tabは使ない
+(setq-default tab-width 2) ;; インデントは2文字
+(add-hook 'before-save-hook 'delete-trailing-whitespace) ;;行末スペースをsave時に自動削除
 
 ;;; js2-mode
 ;; https://qiita.com/sune2/items/e54bb5db129ae73d004b を見てもっと補完を頑張る nodejsでternサーバが必要（ポータビリティが落ちる）
+;; https://emacs.cafe/emacs/javascript/setup/2017/04/23/emacs-setup-javascript.html タグジャンプはここにある ctags不要
 (unless (require 'js2-mode nil t) (package-install 'js2-mode))
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
 (add-hook 'js2-mode-hook (lambda () (set (make-local-variable 'js2-indent-switch-body) t) )) ;;jsのcase文のインデントを通常へ
 (setq js2-basic-offset 2) ;; js2modeのインデントを２へ
+;;; js2mode拡充
+;;; 実行中のchromeと通信し結果を得る https://github.com/NicolasPetton/Indium
+;;; これも https://github.com/skeeto/skewer-mode
+
 
 ;;; web-mode js,css混在のソースをいじっている時に助かる
 (unless (require 'web-mode nil t) (package-install 'web-mode))
@@ -459,16 +419,9 @@
 (global-set-key [C-f1] 'my/copy-current-path)
 (define-key my-helm-map (kbd "p") 'my/copy-current-path)
 
-;;; speedbarでhelm-ag
-;;; 右ボタンメニューに入れられてない。
-(defun my/speedbar-helm-ag ()
-  "Execute helm ag on speedbar directory."
-  (interactive)
-  (helm-ag (speedbar-line-file)))
-
-(define-key speedbar-file-key-map "G" 'my/speedbar-helm-ag)
 
 ;;; fill-paragraphをトグルにする
+;; M-q で実行
 (defun toggle-fill-and-unfill ()
   "Toggle fill and unfill paragraph."
   (interactive)
@@ -485,6 +438,7 @@
 ;; http://nishikawasasaki.hatenablog.com/entry/20120222/1329932699 を参考に dired-upを追加
 ;; https://qiita.com/ballforest/items/0ddbdfeaa9749647b488 でdiredを強化する予定
 ;; ファイルならelscreen上の別バッファで、ディレクトリなら同じバッファで開く
+;; ubuntu でのmouse-1が取れていない
 (defun dired-find-alternate-file2 ()
   "In Dired, visit this file or directory instead of the Dired buffer."
   (interactive)
@@ -535,12 +489,30 @@
 (put 'dired-find-alternate-file 'disabled nil)
 
 
+;;; 括弧の処理
+;;; rainbow-delimiters
+(show-paren-mode t)                  ; 対応する括弧を光らせる
+(unless (require 'rainbow-delimiters nil t) (package-install 'rainbow-delimiters))
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+(require 'cl-lib) ;; 括弧の色を強調する設定
+(require 'color)
+(defun rainbow-delimiters-using-stronger-colors ()
+  (interactive)
+  (cl-loop
+   for index from 1 to rainbow-delimiters-max-face-count
+   do
+   (let ((face (intern (format "rainbow-delimiters-depth-%d-face" index))))
+     (cl-callf color-saturate-name (face-foreground face) 30))))
+(add-hook 'emacs-startup-hook 'rainbow-delimiters-using-stronger-colors)
+
+
+
 ;;; migemo
 ;;; 環境依存するのでとりあえずコメントアウト
 ;; (require 'migemo)
-;; (setq migemo-dictionary "c:/Users/miyohiro/AppData/Roaming/.emacs.d/dict/cp932/migemo-dict")
-;; ;;(setq migemo-dictionary "C:/Users/miyohiro/AppData/Roaming/.emacs.d/migemo/dict/cp932/migemo-dict")
-;; ;;;(setq migemo-dictionary "C:/Users/username/AppData/Roaming/.emacs.d/conf/migemo/dict/utf-8/migemo-dict") ; 文字コードに注意.
+;; (setq migemo-dictionary (expand-file-name "~/.emacs.d/dict/cp932/migemo-dict"))
+;; ;;(setq migemo-dictionary (expand-file-name "~/.emacs.d/migemo/dict/cp932/migemo-dict"))
+;; ;;;(setq migemo-dictionary (expand-file-name "~/.emacs.d/conf/migemo/dict/utf-8/migemo-dict") ; 文字コードに注意.
 ;; (setq migemo-command "cmigemo")
 ;; (setq migemo-options '("-q" "--emacs" "-i" "\a")) (setq migemo-user-dictionary nil) (setq migemo-regex-dictionary nil)
 ;; ;;;(setq migemo-coding-system 'utf-8-unix) ; 文字コードに注意.
@@ -554,10 +526,6 @@
 ;;; http://sheephead.homelinux.org/2011/12/19/6930/
 ;;; https://github.com/magnars/multiple-cursors.el マルチ編集
 ;;; https://github.com/chikatoike/SublimeTextWiki/wiki/SublimeText-Vim-Emacs-%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E6%AF%94%E8%BC%83%E8%A1%A8 ここを参考に最強を目指すのだ
-
-;;; js2mode拡充
-;;; 実行中のchromeと通信し結果を得る https://github.com/NicolasPetton/Indium
-;;; これも https://github.com/skeeto/skewer-mode
 
 
 ;;; 環境依存系の設定
@@ -589,18 +557,19 @@
       ;; font
       ;; http://qiita.com/melito/items/238bdf72237290bc6e42
       ;;; fc-cache -fv でキャッシュを行う
-      (let* ((size 18)
-             (asciifont "Ricty")
-             (jpfont "Ricty")
-             (h (* size 10))
-             (fontspec (font-spec :family asciifont))
-             (jp-fontspec (font-spec :family jpfont)))
-        (set-face-attribute 'default nil :family asciifont :height h)
-        (set-fontset-font nil 'japanese-jisx0213.2004-1 jp-fontspec)
-        (set-fontset-font nil 'japanese-jisx0213-2 jp-fontspec)
-        (set-fontset-font nil 'katakana-jisx0201 jp-fontspec)
-        (set-fontset-font nil '(#x0080 . #x024F) fontspec)
-        (set-fontset-font nil '(#x0370 . #x03FF) fontspec))
+      (when (file-exists-p (expand-file-name "~/.fonts/Ricty-Regular.ttf"))
+        (let* ((size 18)
+               (asciifont "Ricty")
+               (jpfont "Ricty")
+               (h (* size 10))
+               (fontspec (font-spec :family asciifont))
+               (jp-fontspec (font-spec :family jpfont)))
+          (set-face-attribute 'default nil :family asciifont :height h)
+          (set-fontset-font nil 'japanese-jisx0213.2004-1 jp-fontspec)
+          (set-fontset-font nil 'japanese-jisx0213-2 jp-fontspec)
+          (set-fontset-font nil 'katakana-jisx0201 jp-fontspec)
+          (set-fontset-font nil '(#x0080 . #x024F) fontspec)
+          (set-fontset-font nil '(#x0370 . #x03FF) fontspec)))
 
       ;; ずれ確認用
       ;; 0123456789012345678901234567890123456789
