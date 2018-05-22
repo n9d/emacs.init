@@ -8,7 +8,7 @@ emacsの起動ファイル
 - helmはemacsの使用感を変えてしまいますが、絞り込みはスペース区切りで任意、C-jで部分確定と覚えると便利です。
 - helmは全般的にC-;にマッピングされていますが、C-;C-;は直前のelscreenのタブです。
 - C-xbはhelm-miniにバインドされており、ファイル・バッファ選択時にはelscreenで別タブで開きます
-- C-xkはkill-bufferした後、elscreenのタブを閉じます
+- C-xkはkill-bufferした後(除:*scratch*バッファ)、elscreenのタブを閉じます
 - undo(C-/),redo(M-/),undo-tree(C-xu)
 - silver searcher(ag)に対応 C-xg 、C-uC-xgをすると起点ディレクトリを指定できる
 - gnu globalに対応してます。
@@ -20,7 +20,21 @@ emacsの起動ファイル
 - windows(WSL),linux,macで動作します。
 - 直前の編集ファイルは ~/.emacs.d/backupに作成される
 - 全角スペース、tabを可視化
+- 括弧のカラー化、対応括弧の表示
+- companyによる補完（現時点でのデータソースはバッファ）
 
+### javascript支援
+
+- ternを用いた補完支援
+
+`sudo npm install -g tern` を実行しておくと設定を行う
+
+tern-modeのショートカットキー
+-- M-. 定義ジャンプ
+-- M-, 定義ジャンプから戻る
+-- C-c C-r 変数名のリネーム
+-- C-c C-c 型の取得
+-- C-c C-d docsの表示
 
 ## インストール方法
 
@@ -28,9 +42,11 @@ emacsの起動ファイル
 
 - clone後、シンボリックリンクを作れば良い
 
-    cd ~/.emacs.d/
-    git clone https://github.com/n9d/emacs.init.git
-    ln -s emacs.init/init.el .
+```shell:
+cd ~/.emacs.d/
+git clone https://github.com/n9d/emacs.init.git
+ln -s emacs.init/init.el .
+```(
 
 #### ubuntuの場合
 
@@ -40,7 +56,7 @@ emacsの起動ファイル
 
 ### windowsの場合
 
-- WSLのときにはwindowモードで動かすならばVcXsrvが必要。
+- WSLのときにはwindowモードで動かすならばVcXsrvが必要。(他はubuntuに準拠)
 - ターミナル使用時にはRLogin.exeを用いるとC-;が利用可能( C-;を"\030@c;" )
 
 ### macの場合
@@ -48,14 +64,15 @@ emacsの起動ファイル
 - 手元にmacがないが多分動くはず
 
 
-### アップデート
+### アップデートのとき
 
 - 通常はgit pullだけで良さそうだが、パッケージ周りの問題が起こったときelpaを全部消すと最初からインストールします。
 
-    rm -rf ~/.emacs.d/elpa
-    cd ~/.emacs.d/emacs.init
-    git pull
-
+```shell:
+rm -rf ~/.emacs.d/elpa
+cd ~/.emacs.d/emacs.init
+git pull
+```(
 
 ## 問題点
 

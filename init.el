@@ -128,6 +128,16 @@
 (elscreen-start)
 (define-key elscreen-map (kbd "C-z") 'elscreen-toggle) ; C-zC-zを一つ前のwindowにする
 (define-key my-helm-map (kbd "C-;") 'elscreen-toggle) ; C-;C-;を一つ前のwindowにする
+(define-key my-helm-map (kbd "0") 'elscreen-jump)
+(define-key my-helm-map (kbd "1") 'elscreen-jump)
+(define-key my-helm-map (kbd "2") 'elscreen-jump)
+(define-key my-helm-map (kbd "3") 'elscreen-jump)
+(define-key my-helm-map (kbd "4") 'elscreen-jump)
+(define-key my-helm-map (kbd "5") 'elscreen-jump)
+(define-key my-helm-map (kbd "6") 'elscreen-jump)
+(define-key my-helm-map (kbd "7") 'elscreen-jump)
+(define-key my-helm-map (kbd "8") 'elscreen-jump)
+(define-key my-helm-map (kbd "9") 'elscreen-jump)
 (setq elscreen-tab-display-kill-screen nil) ;タブの先頭に[x]を表示しない
 (setq elscreen-tab-display-control nil) ; header-lineの先頭に[<->]を表示しない
 (define-key global-map (kbd "C-x C-f") #'elscreen-find-file)
@@ -350,7 +360,7 @@
 
 ;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
 (if (file-exists-p (expand-file-name "~/sptv"))
-    (add-to-list 'smart-compile-alist '((expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
+    (add-to-list 'smart-compile-alist `(,(expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
 
 
 ;;;プログラム記述系の共通設定
@@ -364,12 +374,43 @@
 ;; https://emacs.cafe/emacs/javascript/setup/2017/04/23/emacs-setup-javascript.html タグジャンプはここにある ctags不要
 (unless (require 'js2-mode nil t) (package-install 'js2-mode))
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+(add-hook 'js2-mode-hook #'js2-imenu-extras-mode)
 (add-hook 'js2-mode-hook (lambda () (set (make-local-variable 'js2-indent-switch-body) t) )) ;;jsのcase文のインデントを通常へ
-(setq js2-basic-offset 2) ;; js2modeのインデントを２へ
-;;; js2mode拡充
-;;; 実行中のchromeと通信し結果を得る https://github.com/NicolasPetton/Indium
-;;; これも https://github.com/skeeto/skewer-mode
+;;(setq js2-basic-offset 2) ;; js2modeのインデントを２へ
 
+
+;; nodejsのインストール https://qiita.com/SUZUKI_Masaya/items/fb142350975f2f8bf088
+;; https://emacs.stackexchange.com/questions/17537/best-company-backends-lists/17548
+;; 補完にnodejsのternを用いる
+;; sudo npm install -g tern
+(when (executable-find "tern")
+    (unless (file-exists-p (expand-file-name "~/.tern-config")) ;.tern-configがなかったら作る
+      (with-temp-buffer
+        (insert "{\n    \"libs\": [\n        \"browser\",\n        \"jquery\"\n    ],\n    \"loadEagerly\": [\n        \"importantfile.js\"\n    ],\n    \"plugins\": {\n        \"requirejs\": {\n            \"baseURL\": \"./\",\n            \"paths\": {}\n        }\n    }\n}\n")
+        (write-file (expand-file-name "~/.tern-config"))))
+
+    (unless (require 'company-tern nil t) (package-install 'company-tern))
+    (setq company-tern-property-marker "")
+    (defun company-tern-depth (candidate)
+      "Return depth attribute for CANDIDATE. 'nil' entries are treated as 0."
+      (let ((depth (get-text-property 0 'depth candidate)))
+        (if (eq depth nil) 0 depth)))
+    ;;(add-hook 'js2-mode-hook 'tern-mode) ; 自分が使っているjs用メジャーモードに変える
+    ;;company-backendsの切り替え
+    (dolist (hook '(js-mode-hook
+                    js2-mode-hook
+                    ;;js3-mode-hook
+                    ;;inferior-js-mode-hook
+                    ))
+      (add-hook hook
+                (lambda ()
+                  (tern-mode t)
+                  ;;(add-to-list (make-local-variable 'company-backends) 'company-tern) ;; ternのみが補完候補
+                  (add-to-list (make-local-variable 'company-backends) '(company-tern :with company-dabbrev-code)) ;;バッファ上の他の単語も候補にする
+                  ;; project(git)内の関数とかも補完候補にしたい
+                  ))
+      )
+    )
 
 ;;; web-mode js,css混在のソースをいじっている時に助かる
 (unless (require 'web-mode nil t) (package-install 'web-mode))
@@ -378,6 +419,36 @@
   "Hooks for Web mode."
   (setq web-mode-markup-indent-offset 2))
 (add-hook 'web-mode-hook 'web-mode-hook)
+
+;;; web-modeでの補完？
+;; Enable CSS completion between <style>...</style>
+(defadvice company-css (before web-mode-set-up-ac-sources activate)
+  "Set CSS completion based on current language before running `company-css'."
+  (if (equal major-mode 'web-mode)
+      (let ((web-mode-cur-language (web-mode-language-at-pos)))
+        (if (string= web-mode-cur-language "css")
+            (unless css-mode (css-mode))))))
+
+;; Enable JavaScript completion between <script>...</script> etc.
+(defadvice company-tern (before web-mode-set-up-ac-sources activate)
+  "Set `tern-mode' based on current language before running `company-tern'."
+  (if (equal major-mode 'web-mode)
+      (let ((web-mode-cur-language (web-mode-language-at-pos)))
+        (if (or (string= web-mode-cur-language "javascript")
+                (string= web-mode-cur-language "jsx"))
+            (unless tern-mode (tern-mode))
+          ;; (if tern-mode (tern-mode))
+                    ))))
+
+
+
+;;; ielm (emacs lisp(elisp)のREPL)
+;; カーソルキーの上下を履歴にする
+(require 'ielm)
+(define-key ielm-map (kbd "<up>") 'comint-previous-input)
+(define-key ielm-map (kbd "<down>") 'comint-next-input)
+
+
 
 ;;; eshell (emacs上のshell)
 ;;; 履歴と補完をhelmで行う
