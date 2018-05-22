@@ -30,11 +30,12 @@ emacsの起動ファイル
 `sudo npm install -g tern` を実行しておくと設定を行う
 
 tern-modeのショートカットキー
--- M-. 定義ジャンプ
--- M-, 定義ジャンプから戻る
--- C-c C-r 変数名のリネーム
--- C-c C-c 型の取得
--- C-c C-d docsの表示
+
+- M-. 定義ジャンプ
+- M-, 定義ジャンプから戻る
+- C-c C-r 変数名のリネーム
+- C-c C-c 型の取得
+- C-c C-d docsの表示
 
 ## インストール方法
 
@@ -46,7 +47,7 @@ tern-modeのショートカットキー
 cd ~/.emacs.d/
 git clone https://github.com/n9d/emacs.init.git
 ln -s emacs.init/init.el .
-```(
+```
 
 #### ubuntuの場合
 
@@ -72,7 +73,7 @@ ln -s emacs.init/init.el .
 rm -rf ~/.emacs.d/elpa
 cd ~/.emacs.d/emacs.init
 git pull
-```(
+```
 
 ## 問題点
 
