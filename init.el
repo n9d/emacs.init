@@ -120,6 +120,15 @@
       (company--insert-candidate2 company-common))))
 (define-key company-active-map [tab] 'company-complete-common2)
 (define-key company-active-map [backtab] 'company-select-previous) ; おまけ
+
+;;色（デフォルトはどぎつい)
+(set-face-attribute 'company-preview-common nil :inherit 'company-preview :foreground "lightgrey")
+(set-face-attribute 'company-scrollbar-bg nil :background "gray")
+(set-face-attribute 'company-scrollbar-fg nil :background "steelblue")
+(set-face-attribute 'company-tooltip nil :background "lightgrey" :foreground "black")
+(set-face-attribute 'company-tooltip-selection  nil :background "light steel blue")
+
+
 ;;;https://qiita.com/sune2/items/c040171a0e377e1400f6 でc/c++の補完ができる
 
 
@@ -303,10 +312,12 @@
 ;; ;;(add-hook 'magit-mode-hook 'magit-svn-mode)
 ;; (define-key vc-prefix-map (kbd "l") 'magit-log-buffer-file-popup)
 
+
 ;;; ediff
 ;;; これがなければ意味が無いぐらい
 (setq ediff-window-setup-function 'ediff-setup-windows-plain) ;コントロール用のバッファを同一フレーム内に表示
 (setq ediff-split-window-function 'split-window-horizontally) ; diffのバッファを上下ではなく 左右に並べる
+
 
 ;;; undo tree
 ;;; undoを木構造で表示できる
@@ -318,15 +329,18 @@
 (define-key global-map (kbd "M-/") 'undo-tree-redo) ;; C-/ がundoの反対
 ;;(define-key undo-tree-map [return] 'undo-tree-visualizer-quit) ;; RETもquitにする qを押し忘れる なんか動きおかしい
 
+
 ;;; 操作系の基本設定
 (setq suggest-key-bindings t)        ; キーバインドの通知(登録されているキーが有るとき教えてくれる)
 (fset 'yes-or-no-p 'y-or-n-p)        ; (yes/no) を (y/n)に
 (define-key global-map (kbd "C-^") 'help-command) ; terminal接続時にはC-hがBSになるのでC-^をとっておく
 
+
 ;;; バックアップファイルを~/.emacs.d/backupへ
 (unless (file-exists-p (expand-file-name "~/.emacs.d/backup")) (make-directory (expand-file-name "~/.emacs.d/backup")))
 (setq backup-directory-alist (cons (cons ".*" (expand-file-name "~/.emacs.d/backup")) backup-directory-alist)) ;バックアップ
 (setq auto-save-file-name-transforms `((".*", (expand-file-name "~/.emacs.d/backup/") t))) ; 自動保存ファイル
+
 
 ;;;カーソル位置を記憶
 ;;; 一度 M-x toggle-save-placeを実行しないと動かない？
@@ -347,6 +361,7 @@
 (set-face-background 'whitespace-space "red")
 (set-face-underline  'whitespace-space t)
 
+
 ;;; smart-compile
 ;;; http://th.nao.ac.jp/MEMBER/zenitani/elisp-j.html#smart-compile
 (unless (require 'smart-compile nil t) (package-install 'smart-compile))
@@ -359,8 +374,9 @@
 (setq compilation-scroll-output t)
 
 ;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
-(if (file-exists-p (expand-file-name "~/sptv"))
-    (add-to-list 'smart-compile-alist `(,(expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
+(if (boundp 'smart-compile-alist)
+    (if (file-exists-p (expand-file-name "~/sptv"))  (add-to-list 'smart-compile-alist `(,(expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
+  )
 
 
 ;;;プログラム記述系の共通設定
@@ -412,33 +428,93 @@
       )
     )
 
+;; eslintによるflycheck
+;;https://joppot.info/2017/04/12/3777
+;; sudo npm install -g eslint
+
 ;;; web-mode js,css混在のソースをいじっている時に助かる
 (unless (require 'web-mode nil t) (package-install 'web-mode))
 (add-to-list 'auto-mode-alist '("\\.html?$"     . web-mode)) ;;; 適用する拡張子
-(defun web-mode-hook ()
-  "Hooks for Web mode."
-  (setq web-mode-markup-indent-offset 2))
-(add-hook 'web-mode-hook 'web-mode-hook)
+;; コンソールでは tag auto closeが無効になっているのでオンにする
+(setq web-mode-auto-close-style 2)
+(setq web-mode-enable-auto-closing t)
+(setq web-mode-enable-auto-pairing t)
+(setq web-mode-enable-auto-indentation t)
+(setq web-mode-enable-auto-expanding t)
 
 ;;; web-modeでの補完？
-;; Enable CSS completion between <style>...</style>
-(defadvice company-css (before web-mode-set-up-ac-sources activate)
-  "Set CSS completion based on current language before running `company-css'."
-  (if (equal major-mode 'web-mode)
-      (let ((web-mode-cur-language (web-mode-language-at-pos)))
-        (if (string= web-mode-cur-language "css")
-            (unless css-mode (css-mode))))))
+(unless (require 'company-web nil t) (package-install 'company-web))
+(require 'company-web-html)
+
+
+;; web-modeの設定
+(defun my-web-mode-hook ()
+  (setq web-mode-markup-indent-offset 2)
+  (setq web-mode-css-indent-offset 2)
+  (setq web-mode-code-indent-offset 2)
+
+  ;; 補完
+  (set (make-local-variable 'company-backends)
+       '(company-tern company-css company-web-html company-yasnippet company-files))
+
+  ;; web-mode. colors.
+  (set-face-attribute 'web-mode-doctype-face nil :foreground "#4A8ACA")
+  (set-face-attribute 'web-mode-html-tag-face nil :foreground  "#4A8ACA")
+  (set-face-attribute 'web-mode-html-attr-name-face nil :foreground  "#87CEEB")
+  (set-face-attribute 'web-mode-html-attr-equal-face nil :foreground  "#FFFFFF")
+  (set-face-attribute 'web-mode-html-attr-value-face nil :foreground  "#D78181")
+  (set-face-attribute 'web-mode-comment-face nil :foreground  "#587F35")
+
+  ;; web-mode. css colors.
+  (set-face-attribute 'web-mode-css-at-rule-face nil :foreground "#DFCF44")
+  (set-face-attribute 'web-mode-css-selector-face nil :foreground "#DFCF44")
+  (set-face-attribute 'web-mode-css-pseudo-class-face nil :foreground "#DFCF44")
+  (set-face-attribute 'web-mode-css-property-name-face nil :foreground "#87CEEB")
+  (set-face-attribute 'web-mode-string-face nil :foreground "#D78181")
+
+  ;;etq web-mode-engines-alist '(("php" . "\\.ctp\\'")) )
+  )
+
+(add-hook 'web-mode-hook 'my-web-mode-hook)
 
 ;; Enable JavaScript completion between <script>...</script> etc.
-(defadvice company-tern (before web-mode-set-up-ac-sources activate)
-  "Set `tern-mode' based on current language before running `company-tern'."
-  (if (equal major-mode 'web-mode)
-      (let ((web-mode-cur-language (web-mode-language-at-pos)))
-        (if (or (string= web-mode-cur-language "javascript")
-                (string= web-mode-cur-language "jsx"))
-            (unless tern-mode (tern-mode))
-          ;; (if tern-mode (tern-mode))
-                    ))))
+(advice-add 'company-tern :before
+            #'(lambda (&rest _)
+                (if (equal major-mode 'web-mode)
+                    (let ((web-mode-cur-language
+                           (web-mode-language-at-pos)))
+                      (if (or (string= web-mode-cur-language "javascript")
+                              (string= web-mode-cur-language "jsx"))
+                          (unless tern-mode (tern-mode))
+                        (if tern-mode (tern-mode -1)))))))
+
+;; css(<style>)の補完がいまいちな気がする
+;; アイデアとしては company-cssにdefadvice してcompany-backendsを切り替える
+
+;; (add-hook 'web-mode-hook (lambda ()
+;;                            (set (make-local-variable 'company-backends) '(company-web-html))
+;;                            (company-mode t)))
+
+;; Enable CSS completion between <style>...</style>
+;; (defadvice company-css (before web-mode-set-up-ac-sources activate)
+;;   "Set CSS completion based on current language before running `company-css'."
+;;   (if (equal major-mode 'web-mode)
+;;       (let ((web-mode-cur-language (web-mode-language-at-pos)))
+;;         (if (string= web-mode-cur-language "css")
+;;             (unless css-mode (css-mode))))))
+
+;; Enable JavaScript completion between <script>...</script> etc.
+;; (defadvice company-tern (before web-mode-set-up-ac-sources activate)
+;;   "Set `tern-mode' based on current language before running `company-tern'."
+;;   (if (equal major-mode 'web-mode)
+;;       (let ((web-mode-cur-language (web-mode-language-at-pos)))
+;;         (if (or (string= web-mode-cur-language "javascript")
+;;                 (string= web-mode-cur-language "jsx"))
+;;             (unless tern-mode (tern-mode))
+;;           ;; (if tern-mode (tern-mode))
+;;                     ))))
+
+;; web-mode のeslintは http://umi-uyura.hatenablog.com/entry/2015/10/28/182320 を参照すること
 
 
 
@@ -465,19 +541,26 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (mozc mozc-im mozc-popup color-moccur migemo web-mode undo-tree sr-speedbar magit js2-mode helm-descbinds helm-ag elscreen company))))
+    (web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
 
-;; custom-set-fase は M-x customize-face で起動できる
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(company-preview-common ((t (:inherit company-preview :foreground "lightgrey"))))
- '(company-scrollbar-bg ((t (:background "gray40"))))
- '(company-scrollbar-fg ((t (:background "orange"))))
- '(company-tooltip ((t (:background "lightgrey" :foreground "black"))))
- '(company-tooltip-selection ((t (:background "steelblue")))))
+ )
+
+;; custom-set-fase は M-x customize-face で起動できる
+;(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ ;'(company-preview-common ((t (:inherit company-preview :foreground "lightgrey"))))
+ ;'(company-scrollbar-bg ((t (:background "gray40"))))
+ ;'(company-scrollbar-fg ((t (:background "orange"))))
+ ;'(company-tooltip ((t (:background "lightgrey" :foreground "black"))))
+ ;'(company-tooltip-selection ((t (:background "steelblue")))))
 
 ;;; 自分関数
 (defun my/copy-current-path ()
