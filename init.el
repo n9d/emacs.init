@@ -129,27 +129,15 @@
 (set-face-attribute 'company-tooltip-selection  nil :background "light steel blue")
 
 
-;;;https://qiita.com/sune2/items/c040171a0e377e1400f6 でc/c++の補完ができる
-
-
 ;;; elscreen  emacs版screen キーバインドが気に入らない
 (unless (require 'elscreen nil t) (package-install 'elscreen))
 (elscreen-start)
 (define-key elscreen-map (kbd "C-z") 'elscreen-toggle) ; C-zC-zを一つ前のwindowにする
 (define-key my-helm-map (kbd "C-;") 'elscreen-toggle) ; C-;C-;を一つ前のwindowにする
-(define-key my-helm-map (kbd "0") 'elscreen-jump)
-(define-key my-helm-map (kbd "1") 'elscreen-jump)
-(define-key my-helm-map (kbd "2") 'elscreen-jump)
-(define-key my-helm-map (kbd "3") 'elscreen-jump)
-(define-key my-helm-map (kbd "4") 'elscreen-jump)
-(define-key my-helm-map (kbd "5") 'elscreen-jump)
-(define-key my-helm-map (kbd "6") 'elscreen-jump)
-(define-key my-helm-map (kbd "7") 'elscreen-jump)
-(define-key my-helm-map (kbd "8") 'elscreen-jump)
-(define-key my-helm-map (kbd "9") 'elscreen-jump)
-(setq elscreen-tab-display-kill-screen nil) ;タブの先頭に[x]を表示しない
-(setq elscreen-tab-display-control nil) ; header-lineの先頭に[<->]を表示しない
-(define-key global-map (kbd "C-x C-f") #'elscreen-find-file)
+(dolist (x '(0 1 2 3 4 5 6 7 8 9)) (define-key my-helm-map (kbd (number-to-string x)) 'elscreen-jump)) ; C-;0-9をelscreen切り替え
+;;(setq elscreen-tab-display-kill-screen nil) ;タブの先頭に[x]を表示しない
+;;(setq elscreen-tab-display-control nil) ; header-lineの先頭に[<->]を表示しない
+(define-key global-map (kbd "C-x C-f") 'elscreen-find-file)
 (define-key global-map (kbd "C-x d") 'elscreen-dired)
 (defun elscreen-kill-and-kill-buffer ()
   (interactive)
@@ -366,12 +354,16 @@
 ;;; http://th.nao.ac.jp/MEMBER/zenitani/elisp-j.html#smart-compile
 (unless (require 'smart-compile nil t) (package-install 'smart-compile))
 ;;;(global-set-key (kbd "C-c C-c") 'smart-compile)
-(global-set-key (kbd "C-c c") 'smart-compile)
-(define-key global-map [f5] (kbd "C-x C-s C-c c C-m"))
-(define-key global-map [f6] 'next-error)
-(global-set-key (kbd "C-c @") 'next-error)
-(setq compilation-window-height 15)  ;; デフォルトは画面の下半分
-(setq compilation-scroll-output t)
+(dolist (hook '(c-mode-hook)) ;;smartcompileを実行するmode-hookを登録していく
+  (add-hook hook
+            (lambda ()
+              (global-set-key (kbd "C-c c") 'smart-compile)
+              (define-key global-map [f5] (kbd "C-x C-s C-c c C-m"))
+              (define-key global-map [f6] 'next-error)
+              (global-set-key (kbd "C-c @") 'next-error)
+              (setq compilation-window-height 15)  ;; デフォルトは画面の下半分
+              (setq compilation-scroll-output t)
+              )))
 
 ;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
 (if (boundp 'smart-compile-alist)
@@ -384,6 +376,15 @@
 (setq-default indent-tabs-mode nil) ;; tabは使ない
 (setq-default tab-width 2) ;; インデントは2文字
 (add-hook 'before-save-hook 'delete-trailing-whitespace) ;;行末スペースをsave時に自動削除
+
+;;; flycheck
+(unless (require 'flycheck nil t) (package-install 'flycheck))
+(add-hook 'after-init-hook #'global-flycheck-mode)
+
+
+;; C-mode
+;;;https://qiita.com/sune2/items/c040171a0e377e1400f6 でc/c++の補完ができる
+
 
 ;;; js2-mode
 ;; https://qiita.com/sune2/items/e54bb5db129ae73d004b を見てもっと補完を頑張る nodejsでternサーバが必要（ポータビリティが落ちる）
@@ -431,6 +432,30 @@
 ;; eslintによるflycheck
 ;;https://joppot.info/2017/04/12/3777
 ;; sudo npm install -g eslint
+(when (executable-find "eslint")
+    (unless (file-exists-p (expand-file-name "~/.eslintrc")) ;.eslintrcがなかったら作る
+      (with-temp-buffer
+        (insert "{\n  \"env\" : {\n    \"es6\": true\n  },\n  \"ecmaFeatures\": {\n    \"jsx\": true\n  }\n}\n")
+        (write-file (expand-file-name "~/.eslintrc"))))
+    (dolist (hook '(js-mode-hook
+                    js2-mode-hook
+                    ;;js3-mode-hook
+                    ;;inferior-js-mode-hook
+                    ))
+      (add-hook hook ; jshint,jscsを無効にする
+                (lambda ()
+                  (eval-after-load 'flycheck
+                    '(custom-set-variables
+                      '(flycheck-disabled-checkers '(javascript-jshint javascript-jscs))))
+                  (setq js2-include-browser-externs nil)
+                  (setq js2-mode-show-parse-errors nil)
+                  (setq js2-mode-show-strict-warnings nil)
+                  (setq js2-highlight-external-variables nil)
+                  (setq js2-include-jslint-globals nil)
+                  ))
+      )
+    )
+
 
 ;;; web-mode js,css混在のソースをいじっている時に助かる
 (unless (require 'web-mode nil t) (package-install 'web-mode))
@@ -475,6 +500,16 @@
   ;;etq web-mode-engines-alist '(("php" . "\\.ctp\\'")) )
   )
 
+
+;;(flycheck-add-mode 'javascript-eslint 'web-mode)
+
+ (add-hook 'web-mode-hook
+           (lambda ()
+             (when (or (equal web-mode-content-type "javascript")
+                       (equal web-mode-content-type "jsx"))
+               (flycheck-add-mode 'javascript-eslint 'web-mode)
+               (flycheck-mode))))
+
 (add-hook 'web-mode-hook 'my-web-mode-hook)
 
 ;; Enable JavaScript completion between <script>...</script> etc.
@@ -485,8 +520,14 @@
                            (web-mode-language-at-pos)))
                       (if (or (string= web-mode-cur-language "javascript")
                               (string= web-mode-cur-language "jsx"))
-                          (unless tern-mode (tern-mode))
-                        (if tern-mode (tern-mode -1)))))))
+                          (progn
+                            (unless tern-mode (tern-mode))
+                            ;;(flycheck-add-mode 'javascript-eslint 'web-mode)
+                            ;;(flycheck-mode)
+                            )
+                        (progn
+                          (if tern-mode (tern-mode -1))
+                          ))))))
 
 ;; css(<style>)の補完がいまいちな気がする
 ;; アイデアとしては company-cssにdefadvice してcompany-backendsを切り替える
@@ -541,7 +582,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
+    (flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
