@@ -1,7 +1,20 @@
+;;; init.el --- emacs initialize file.
+
+;;; Commentary:
+
+;; Author: n9d
+;; URL: https://github.com/n9d/emacs.init
+;; Version: 0.01
+;; Package-Requires: helm
+
+;; ライセンス
+
+;;; Code:
+
 ;;; proxy for url.el
-;(setq url-proxy-services
-;      '(("http" . "172.16.220.102:3128")
-;        ("https" . "172.16.220.102:3128")))
+;;(setq url-proxy-services
+;;      '(("http" . "172.16.220.102:3128")
+;;        ("https" . "172.16.220.102:3128")))
 
 ;; オリジナルの .elを持ってきたいときには以下を入れる
 ;;(setq load-path (cons (expand-file-name "~/.emacs.d/site-lisp/") load-path))
@@ -31,7 +44,7 @@
 (define-key global-map (kbd "C-x b") 'helm-mini)
 (define-key global-map (kbd "C-x C-b") 'helm-buffers-list)
 (define-key global-map (kbd "M-y") 'helm-show-kill-ring)
-(defvar my-helm-map (make-sparse-keymap) "my original helm keymap binding F7 and C-;")
+(defvar my-helm-map (make-sparse-keymap) "My original helm keymap binding F7 and C-;.")
 (defalias 'my-helm-prefix my-helm-map)
 (define-key global-map [f7] 'my-helm-prefix)
 (define-key global-map (kbd "C-;") 'my-helm-prefix) ;; ネイティブwindowの時にしかキーが取れない rloginでは C-;を"\030@c;"に割り当てる
@@ -102,6 +115,7 @@
 (define-key company-active-map (kbd "C-p") 'company-select-previous)
 (define-key company-active-map (kbd "C-h") nil)
 (defun company--insert-candidate2 (candidate)
+  "Match company-mode behavior to autocomplete.CANDIDATE."
   (when (> (length candidate) 0)
     (setq candidate (substring-no-properties candidate))
     (if (eq (company-call-backend 'ignore-case) 'keep-prefix)
@@ -112,6 +126,7 @@
         (insert candidate))
       )))
 (defun company-complete-common2 ()
+  "Match company-mode behavior to autocomplete."
   (interactive)
   (when (company-manual-begin)
     (if (and (not (cdr company-candidates))
@@ -140,6 +155,7 @@
 (define-key global-map (kbd "C-x C-f") 'elscreen-find-file)
 (define-key global-map (kbd "C-x d") 'elscreen-dired)
 (defun elscreen-kill-and-kill-buffer ()
+  "Elscreen kill and kill buffer."
   (interactive)
   (unless (string= (buffer-name) "*scratch*") (kill-buffer))
   ;;(kill-buffer)
@@ -174,7 +190,9 @@
 ;;; 最新のorgmodeでditaaが動かないので ubuntu16.04付属のorgを使う
 ;;; 埋め込みは http://tanehp.ec-net.jp/heppoko-lab/prog/resource/org_mode/org_mode_memo.html が参考になる
 ;;; #+ の補完をやってくれるようにする
+;;(require 'org-mode)
 (defun my-org-mode-hook ()
+  "My org mode hook."
   (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
 (add-hook 'org-mode-hook #'my-org-mode-hook)
 ;;(require ‘org-babel-init)
@@ -195,11 +213,12 @@
 ;;;
 ;;; 拡張したpictureモードC-矢印で線がかける
 (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
-(add-hook 'picture-mode-hook 'picture-mode-init)
+(add-hook 'picture-mode-hook 'picture-mode-init2)
 (autoload 'picture-mode-init "picture-init")
 (require 'picture)
 
-(defun picture-mode-init ()
+(defun picture-mode-init2 ()
+  "Use cursor keys to operate picture mode."
   (define-key picture-mode-map [C-right] 'picture-line-draw-right)
   (define-key picture-mode-map [C-left]  'picture-line-draw-left)
   (define-key picture-mode-map [C-up]    'picture-line-draw-up)
@@ -218,17 +237,18 @@
   (define-key picture-mode-map [(control ?c) C-down]  'picture-region-move-down)
   nil)
 
-(defun picture-line-draw-str (h v str)
+(defun picture-line-draw-str (h v str) "Picture line draw str.  H V STR."
   (cond ((/= h 0) (cond ((string= str "|") "+") ((string= str "+") "+") (t "-")))
         ((/= v 0) (cond ((string= str "-") "+") ((string= str "+") "+") (t "|")))
         (t str)))
 
-(defun picture-line-delete-str (h v str)
+(defun picture-line-delete-str (h v str) "Picture line delete str.  H V STR."
   (cond ((/= h 0) (cond ((string= str "|") "|") ((string= str "+") "|") (t " ")))
         ((/= v 0) (cond ((string= str "-") "-") ((string= str "+") "-") (t " ")))
         (t str)))
 
 (defun picture-line-draw (num v h del)
+  "Picture line draw.  NUM V H DEL."
   (let ((indent-tabs-mode nil)
     (old-v picture-vertical-step)
     (old-h picture-horizontal-step))
@@ -250,6 +270,7 @@
     (setq picture-horizontal-step old-h)))
 
 (defun picture-region-move (start end num v h)
+  "Picture line region move.  START END NUM V H."
   (let ((indent-tabs-mode nil)
     (old-v picture-vertical-step)
     (old-h picture-horizontal-step) rect)
@@ -265,18 +286,18 @@
     (setq picture-vertical-step old-v)
     (setq picture-horizontal-step old-h)))
 
-(defun picture-region-move-right (start end num) "Move a rectangle right." (interactive "r\np") (picture-region-move start end num 0 1))
-(defun picture-region-move-left (start end num) "Move a rectangle left." (interactive "r\np") (picture-region-move start end num 0 -1))
-(defun picture-region-move-up (start end num) "Move a rectangle up." (interactive "r\np") (picture-region-move start end num -1 0))
-(defun picture-region-move-down (start end num) "Move a rectangle left." (interactive "r\np") (picture-region-move start end num 1 0))
-(defun picture-line-draw-right (n) "Draw line right." (interactive "p") (picture-line-draw n 0 1 nil))
-(defun picture-line-draw-left (n) "Draw line left." (interactive "p") (picture-line-draw n 0 -1 nil))
-(defun picture-line-draw-up (n) "Draw line up." (interactive "p") (picture-line-draw n -1 0 nil))
-(defun picture-line-draw-down (n) "Draw line down." (interactive "p") (picture-line-draw n 1 0 nil))
-(defun picture-line-delete-right (n) "Delete line right." (interactive "p") (picture-line-draw n 0 1 t))
-(defun picture-line-delete-left (n) "Delete line left." (interactive "p") (picture-line-draw n 0 -1 t))
-(defun picture-line-delete-up (n) "Delete line up." (interactive "p") (picture-line-draw n -1 0 t))
-(defun picture-line-delete-down (n) "Delete line down." (interactive "p") (picture-line-draw n 1 0 t))
+(defun picture-region-move-right (start end num) "Move a rectangle right.  START END NUM." (interactive "r\np") (picture-region-move start end num 0 1))
+(defun picture-region-move-left (start end num) "Move a rectangle left.  START END NUM." (interactive "r\np") (picture-region-move start end num 0 -1))
+(defun picture-region-move-up (start end num) "Move a rectangle up.  START END NUM." (interactive "r\np") (picture-region-move start end num -1 0))
+(defun picture-region-move-down (start end num) "Move a rectangle left.  START END NUM." (interactive "r\np") (picture-region-move start end num 1 0))
+(defun picture-line-draw-right (n) "Draw line right.  N." (interactive "p") (picture-line-draw n 0 1 nil))
+(defun picture-line-draw-left (n) "Draw line left.  N." (interactive "p") (picture-line-draw n 0 -1 nil))
+(defun picture-line-draw-up (n) "Draw line up.  N." (interactive "p") (picture-line-draw n -1 0 nil))
+(defun picture-line-draw-down (n) "Draw line down.  N." (interactive "p") (picture-line-draw n 1 0 nil))
+(defun picture-line-delete-right (n) "Delete line right.  N." (interactive "p") (picture-line-draw n 0 1 t))
+(defun picture-line-delete-left (n) "Delete line left.  N." (interactive "p") (picture-line-draw n 0 -1 t))
+(defun picture-line-delete-up (n) "Delete line up.  N." (interactive "p") (picture-line-draw n -1 0 t))
+(defun picture-line-delete-down (n) "Delete line down.  N." (interactive "p") (picture-line-draw n 1 0 t))
 
 
 ;;;
@@ -474,6 +495,7 @@
 
 ;; web-modeの設定
 (defun my-web-mode-hook ()
+  "My web mode hook."
   (setq web-mode-markup-indent-offset 2)
   (setq web-mode-css-indent-offset 2)
   (setq web-mode-code-indent-offset 2)
@@ -582,7 +604,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
+    (helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -646,6 +668,7 @@
                             (t dired-path))))
     (find-alternate-file dired-path2)))
 (defun dired-open-in-accordance-with-situation ()
+  "In Direed.  Open in accordance with situation."
   (interactive)
   (let ((file (dired-get-file-for-visit)))
     (if (file-directory-p file)
@@ -660,7 +683,7 @@
     (set-buffer-modified-p nil)
     (find-alternate-file up)))
 (defun dired-mouse-find-file (event)
-  "In Dired, visit the file or directory name you click on."
+  "In Dired,  visit the file or directory name you click on.  EVENT."
   (interactive "e")
   (let (window pos file)
     (save-excursion
@@ -692,6 +715,7 @@
 (require 'cl-lib) ;; 括弧の色を強調する設定
 (require 'color)
 (defun rainbow-delimiters-using-stronger-colors ()
+  "Rainbow delimiters using stronger colors."
   (interactive)
   (cl-loop
    for index from 1 to rainbow-delimiters-max-face-count
@@ -753,7 +777,7 @@
       ;; http://qiita.com/melito/items/238bdf72237290bc6e42
       ;;; fc-cache -fv でキャッシュを行う
       (when (file-exists-p (expand-file-name "~/.fonts/Ricty-Regular.ttf"))
-        (let* ((size 18)
+        (let* ((size 12)
                (asciifont "Ricty")
                (jpfont "Ricty")
                (h (* size 10))
@@ -768,7 +792,7 @@
 
       ;; ずれ確認用
       ;; 0123456789012345678901234567890123456789
-      ;; アイウエオアイウエオアイウエオアイウエオアイウエオアイウエオアイウエオアイウエオ
+      ;; ｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵ
       ;; あいうえおあいうえおあいうえおあいうえお
 
         ;; mozcで入力
@@ -782,9 +806,9 @@
       (define-key global-map [zenkaku-hankaku] 'toggle-input-method)
 
 
-      (if (eq system-type 'gnu/linux) ;; linuxだったら
-          (add-to-list 'default-frame-alist '(font . "ricty-13.5")) ;fontsize指定
-        )
+      ;; (if (eq system-type 'gnu/linux) ;; linuxだったら
+      ;;     (add-to-list 'default-frame-alist '(font . "ricty-13.5")) ;fontsize指定
+      ;;   )
       (if (eq system-type 'windows-nt)  ;windowsだったら
           ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
           ;; ショートカットで直接実行するとpathの設定がダメなので
@@ -795,3 +819,7 @@
         )
       )
     ))
+
+(provide 'init)
+
+;;; init.el ends here
