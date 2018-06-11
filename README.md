@@ -20,8 +20,9 @@ emacsの起動ファイル
 - windows(WSL),linux,macで動作します。
 - 直前の編集ファイル、一時ファイルは ~/.emacs.d/backupに作成されます（なければ作成します）
 - 全角スペース、tabを可視化
-- 括弧のカラー化、対応括弧の表示
+- 括弧のカラー化、対応括弧の表示、括弧等の自動挿入
 - companyによる補完
+- ansi-termの起動(C-;t)、lineモード,charモードの切り替え(C-;[)
 
 ### javascript支援
 
