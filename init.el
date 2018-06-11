@@ -49,7 +49,7 @@
 (define-key global-map [f7] 'my-helm-prefix)
 (define-key global-map (kbd "C-;") 'my-helm-prefix) ;; ネイティブwindowの時にしかキーが取れない rloginでは C-;を"\030@c;"に割り当てる
 (define-key my-helm-map (kbd "h") 'helm-mini)
-(define-key my-helm-map (kbd "r") 'helm-recentf)
+;;(define-key my-helm-map (kbd "r") 'helm-recentf) ;; ielmの起動にした(repl)
 (define-key my-helm-map (kbd "i") 'helm-imenu)
 (define-key my-helm-map (kbd "k") 'helm-show-kill-ring)
 (define-key my-helm-map (kbd "o") 'helm-occur)
@@ -586,8 +586,13 @@
 (require 'ielm)
 (define-key ielm-map (kbd "<up>") 'comint-previous-input)
 (define-key ielm-map (kbd "<down>") 'comint-next-input)
-
-
+(defun exec-ielm ()
+  "Exec ielm."
+  (interactive)
+  (elscreen-create)
+  (ielm)
+  )
+(define-key my-helm-map (kbd "r") 'exec-ielm)
 
 ;;; eshell (emacs上のshell)
 ;;; 履歴と補完をhelmで行う
@@ -595,6 +600,27 @@
           #'(lambda () (define-key eshell-mode-map (kbd "M-p") 'helm-eshell-history))) ;; helm で履歴から入力
 (add-hook 'eshell-mode-hook
           #'(lambda () (define-key eshell-mode-map (kbd "M-n") 'helm-esh-pcomplete))) ;; helm で補完
+
+
+;;; ansi-term
+(defun exec-ansi-term ()
+  "Swith another elscreen and exec ansi term."
+  (interactive)
+  (elscreen-create)
+  (ansi-term "/bin/bash")
+  )
+;; (defun kill-ring-save-and-char-mode ()
+;;   "Save kill ring and go to char mode."
+;;   (interactive)
+;;   (kill-ring-save)
+;;  (term-char-mode))
+;;(define-key term-mode-map (kbd "M-w") ;; M-wでchar-modeに移るようにしたい。＞そのうち
+(define-key my-helm-map (kbd "t") 'exec-ansi-term)
+(define-key term-raw-map (kbd "C-; [") 'term-line-mode)
+(define-key term-mode-map (kbd "C-; [") 'term-char-mode)
+
+
+
 
 ;;; 以下はemacsが自動で設定したもの
 (custom-set-variables
@@ -723,7 +749,8 @@
    (let ((face (intern (format "rainbow-delimiters-depth-%d-face" index))))
      (cl-callf color-saturate-name (face-foreground face) 30))))
 (add-hook 'emacs-startup-hook 'rainbow-delimiters-using-stronger-colors)
-
+;;; 括弧の自動挿入
+(electric-pair-mode 1)
 
 
 ;;; migemo
