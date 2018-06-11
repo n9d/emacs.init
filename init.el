@@ -616,8 +616,10 @@
 ;;  (term-char-mode))
 ;;(define-key term-mode-map (kbd "M-w") ;; M-wでchar-modeに移るようにしたい。＞そのうち
 (define-key my-helm-map (kbd "t") 'exec-ansi-term)
-(define-key term-raw-map (kbd "C-; [") 'term-line-mode)
-(define-key term-mode-map (kbd "C-; [") 'term-char-mode)
+(add-hook 'term-exec-hook
+          #'(lambda ()
+              (define-key term-raw-map (kbd "C-; [") 'term-line-mode)
+              (define-key term-mode-map (kbd "C-; [") 'term-char-mode)))
 
 
 
