@@ -416,7 +416,6 @@
 (add-hook 'js2-mode-hook (lambda () (set (make-local-variable 'js2-indent-switch-body) t) )) ;;jsのcase文のインデントを通常へ
 ;;(setq js2-basic-offset 2) ;; js2modeのインデントを２へ
 
-
 ;; nodejsのインストール https://qiita.com/SUZUKI_Masaya/items/fb142350975f2f8bf088
 ;; https://emacs.stackexchange.com/questions/17537/best-company-backends-lists/17548
 ;; 補完にnodejsのternを用いる
@@ -478,7 +477,10 @@
     )
 
 
-;;; web-mode js,css混在のソースをいじっている時に助かる
+;;;
+;;; web-mode.
+;;; js,css混在のソースをいじっている時に助かる
+
 (unless (require 'web-mode nil t) (package-install 'web-mode))
 (add-to-list 'auto-mode-alist '("\\.html?$"     . web-mode)) ;;; 適用する拡張子
 ;; コンソールでは tag auto closeが無効になっているのでオンにする
@@ -580,6 +582,31 @@
 ;; web-mode のeslintは http://umi-uyura.hatenablog.com/entry/2015/10/28/182320 を参照すること
 
 
+;;;
+;;; ruby mode
+;;;
+;;;
+;; inf-ruby irbをバッファで起動する
+(unless (require 'inf-ruby nil t) (package-install 'inf-ruby))
+(autoload 'inf-ruby-minor-mode "inf-ruby" "Run an inferior Ruby process" t)
+(add-hook 'ruby-mode-hook 'inf-ruby-minor-mode)
+
+;; do endなどの補完
+;; 通常の electricのほうが使いやすいので切る
+;;(unless (require 'ruby-electric nil t) (package-install 'ruby-electric))
+;;(add-hook 'ruby-mode-hook '(lambda () (ruby-electric-mode t)))
+;;(setq ruby-electric-expand-delimiters-list nil)
+
+;; 補完機能
+;; pryが必要
+;; M-x inf-ruby
+;; M-x robe-startしないとオムニ補完しない
+(unless (require 'robe nil t) (package-install 'robe))
+(add-hook 'ruby-mode-hook 'robe-mode)
+(autoload 'robe-mode "robe" "Code navigation, documentation lookup and completion for Ruby" t nil)
+(eval-after-load 'company '(push 'company-robe company-backends))
+
+
 
 ;;; ielm (emacs lisp(elisp)のREPL)
 ;; カーソルキーの上下を履歴にする
@@ -632,7 +659,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
+    (inf-ruby helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
