@@ -38,6 +38,13 @@ tern-modeのショートカットキー
 - C-c C-c 型の取得
 - C-c C-d docsの表示
 
+
+### ruby支援
+
+`sudo apt-get install pry`等にてpryを入れておく
+
+- M-x inf-ruby, M-x robe-startしないとオムニ補完を開始しない（用修正）
+
 ## インストール方法
 
 ### はじめてのとき
