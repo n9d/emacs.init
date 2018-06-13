@@ -586,6 +586,7 @@
 ;;; ruby mode
 ;;;
 ;;;
+;; https://qiita.com/kod314/items/9a56983f0d70f57420b1 を参考にした
 ;; inf-ruby irbをバッファで起動する
 (unless (require 'inf-ruby nil t) (package-install 'inf-ruby))
 (autoload 'inf-ruby-minor-mode "inf-ruby" "Run an inferior Ruby process" t)
@@ -643,10 +644,17 @@
 ;;  (term-char-mode))
 ;;(define-key term-mode-map (kbd "M-w") ;; M-wでchar-modeに移るようにしたい。＞そのうち
 (define-key my-helm-map (kbd "t") 'exec-ansi-term)
+(defun change-term-char-mode-and-elscreen-toggle ()
+  "Change term line mode and elscreen toggle."
+  (interactive)
+  (term-char-mode)
+  (elscreen-toggle))
+
 (add-hook 'term-exec-hook
           #'(lambda ()
               (define-key term-raw-map (kbd "C-; [") 'term-line-mode)
-              (define-key term-mode-map (kbd "C-; [") 'term-char-mode)))
+              (define-key term-mode-map (kbd "C-; [") 'term-char-mode)
+              (define-key term-mode-map (kbd "C-; C-;") 'change-term-char-mode-and-elscreen-toggle)))
 
 
 

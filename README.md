@@ -2,7 +2,7 @@
 
 emacsの起動ファイル
 
-## 特徴
+# 特徴
 
 - 最初の起動時に必要なパッケージをネットから取ってきます
 - helmはemacsの使用感を変えてしまいますが、絞り込みはスペース区切りで任意、C-jで部分確定と覚えると便利です。ディレクトリを上がるときにはC-l
@@ -24,7 +24,7 @@ emacsの起動ファイル
 - companyによる補完
 - ansi-termの起動(C-;t)、lineモード,charモードの切り替え(C-;[)
 
-### javascript支援
+## javascript支援
 
 - ternを用いた補完支援
 
@@ -39,15 +39,15 @@ tern-modeのショートカットキー
 - C-c C-d docsの表示
 
 
-### ruby支援
+## ruby支援
 
 `sudo apt-get install pry`等にてpryを入れておく
 
-- M-x inf-ruby, M-x robe-startしないとオムニ補完を開始しない（用修正）
+- M-x inf-ruby, M-x robe-startしないとオムニ補完を開始しない（要修正）
 
-## インストール方法
+# インストール方法
 
-### はじめてのとき
+## はじめてのとき
 
 - clone後、シンボリックリンクを作れば良い
 
@@ -57,23 +57,23 @@ git clone https://github.com/n9d/emacs.init.git
 ln -s emacs.init/init.el .
 ```
 
-#### ubuntuの場合
+## ubuntuの場合
 
 - フォントがrictyのため .fonts以下にritcyフォントをおく おいたあとは`fc-cache -fv` http://www.rs.tus.ac.jp/yyusa/ricty.html
 - C-; がimeのクリップボード選択になっているので解除する http://citrras.com/archives/1336
 - ターミナルでC-;(ctrl+semicolon)がほしいときにはxtermをインストールする( C-;を"\030@c;" )
 
-### windowsの場合
+## windowsの場合
 
 - WSLのときにはwindowモードで動かすならばVcXsrvが必要。(他はubuntuに準拠)
 - ターミナル使用時にはRLogin.exeを用いるとC-;が利用可能( C-;を"\030@c;" )
 
-### macの場合
+## macの場合
 
 - 手元にmacがないが多分動くはず
 
 
-### アップデートのとき
+## アップデートのとき
 
 - 通常はgit pullだけで良さそうだが、パッケージ周りの問題が起こったときelpaを全部消すと最初からインストールします。
 
@@ -83,6 +83,6 @@ cd ~/.emacs.d/emacs.init
 git pull
 ```
 
-## 問題点
+# 問題点
 
 - ubuntuでmouse-1を入れ替えることができていない
