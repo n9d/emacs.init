@@ -667,7 +667,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (inf-ruby helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
+    (mozc inf-ruby helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -824,7 +824,7 @@
   ;; terminalでホイルスクロール、マウスクリックが使えるようになる。
   ;; 他のwindowとのコピペ時にはctrl押したり(teraterm),メニューで切り替えたりする必要あり(rlogin)
   (xterm-mouse-mode t)
-  (mouse-wheel-mode t)
+  (when (require 'mwheel nil 'noerror) (mouse-wheel-mode t))
   (global-set-key [mouse-4] '(lambda () (interactive) (scroll-down 3)))
   (global-set-key [mouse-5] '(lambda () (interactive) (scroll-up   3)))
   )
