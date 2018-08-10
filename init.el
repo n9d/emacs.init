@@ -199,10 +199,10 @@
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
 (setq org-log-done 'time);; DONEの時刻を記録
 ;; メモ書きに大変便利、結果は#+begin_src ruby :exports resultsで出力
-(org-babel-do-load-languages ;
- 'org-babel-load-languages
- '((dot .t) (ditaa .t) (gnuplot .t) (emacs-lisp .t)
-   (ruby .t) (sh .t) )) ;;デフォルトはemacslispのみ
+;(org-babel-do-load-languages ;
+; 'org-babel-load-languages
+; '((dot .t) (ditaa .t) (gnuplot .t) (emacs-lisp .t)
+;   (ruby .t) (sh .t) )) ;;デフォルトはemacslispのみ
 ;; ditaaの設定
 ;; #+begin_src ditaa :file images/ditaa-test.png :cmdline -s 2 日本語を通したいときには左記のヘッダにする
 ;; http://d.hatena.ne.jp/tamura70/20100317/org を参照のこと
@@ -212,7 +212,7 @@
 
 ;;;
 ;;; 拡張したpictureモードC-矢印で線がかける
-(define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
+;(define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
 (add-hook 'picture-mode-hook 'picture-mode-init2)
 (autoload 'picture-mode-init "picture-init")
 (require 'picture)
@@ -635,7 +635,8 @@
   "Swith another elscreen and exec ansi term."
   (interactive)
   (elscreen-create)
-  (ansi-term "/bin/bash")
+  ;;(ansi-term "/bin/bash")
+  (ansi-term (locate-file "bash" exec-path exec-suffixes 1))
   )
 ;; (defun kill-ring-save-and-char-mode ()
 ;;   "Save kill ring and go to char mode."
@@ -831,57 +832,54 @@
 
 ;;; window-systemで立ち上がった時の設定
 ;;; http://hico-horiuchi.hateblo.jp/entry/20130415/1366010165 ; 分岐
+;;; macのときは https://github.com/railwaycat/homebrew-emacsmacport で入れる
 (when window-system
   (progn
     (require 'linum)  ;;行番号表示
     (global-linum-mode t);; 常にlinum-modeを有効
-    (unless (eq system-type 'darwin) ;; macじゃなかったら
 
-      ;; font
-      ;; http://qiita.com/melito/items/238bdf72237290bc6e42
-      ;;; fc-cache -fv でキャッシュを行う
-      (when (file-exists-p (expand-file-name "~/.fonts/Ricty-Regular.ttf"))
-        (let* ((size 12)
-               (asciifont "Ricty")
-               (jpfont "Ricty")
-               (h (* size 10))
-               (fontspec (font-spec :family asciifont))
-               (jp-fontspec (font-spec :family jpfont)))
-          (set-face-attribute 'default nil :family asciifont :height h)
-          (set-fontset-font nil 'japanese-jisx0213.2004-1 jp-fontspec)
-          (set-fontset-font nil 'japanese-jisx0213-2 jp-fontspec)
-          (set-fontset-font nil 'katakana-jisx0201 jp-fontspec)
-          (set-fontset-font nil '(#x0080 . #x024F) fontspec)
-          (set-fontset-font nil '(#x0370 . #x03FF) fontspec)))
+    ;; font
+    ;; http://qiita.com/melito/items/238bdf72237290bc6e42
+    ;; https://qiita.com/segur/items/50ae2697212a7bdb7c7f mac
+    ;; fc-cache -fv でキャッシュを行う
+    (when (or (file-exists-p (expand-file-name "~/.fonts/Ricty-Regular.ttf")) (file-exists-p (expand-file-name "~/Library/Fonts/Ricty-Regular.ttf")))
+      (let* ((size 12)
+             (asciifont "Ricty")
+             (jpfont "Ricty")
+             (h (* size 10))
+             (fontspec (font-spec :family asciifont))
+             (jp-fontspec (font-spec :family jpfont)))
+        (set-face-attribute 'default nil :family asciifont :height h)
+        (set-fontset-font nil 'japanese-jisx0213.2004-1 jp-fontspec)
+        (set-fontset-font nil 'japanese-jisx0213-2 jp-fontspec)
+        (set-fontset-font nil 'katakana-jisx0201 jp-fontspec)
+        (set-fontset-font nil '(#x0080 . #x024F) fontspec)
+        (set-fontset-font nil '(#x0370 . #x03FF) fontspec)))
 
-      ;; ずれ確認用
-      ;; 0123456789012345678901234567890123456789
-      ;; ｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵ
-      ;; あいうえおあいうえおあいうえおあいうえお
+    ;; ずれ確認用
+    ;; 0123456789012345678901234567890123456789
+    ;; ｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵ
+    ;; あいうえおあいうえおあいうえおあいうえお
 
-        ;; mozcで入力
-        ;;http://d.hatena.ne.jp/kitokitoki/20120925/p2
-        ;; mozc-toolsを入れる
-        ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
-        ;;https://yo.eki.do/notes/emacs-windows-2017
+    ;; ime linuxのみ mozcで入力
+    ;;http://d.hatena.ne.jp/kitokitoki/20120925/p2
+    ;; mozc-toolsを入れる
+    ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
+    ;;https://yo.eki.do/notes/emacs-windows-2017
+    ;;(if (unless system-type 'darwin) ;; macじゃなかったら
+    (if (eq system-type 'gnu/linux) ;; linuxだったら
       (unless (require 'mozc nil t) (package-install 'mozc))
       (setq default-input-method "japanese-mozc")
-        ;;(setq default-input-method "japanese-mozc")
-      (define-key global-map [zenkaku-hankaku] 'toggle-input-method)
+      ;;(setq default-input-method "japanese-mozc")
+      (define-key global-map [zenkaku-hankaku] 'toggle-input-method))
 
-
-      ;; (if (eq system-type 'gnu/linux) ;; linuxだったら
-      ;;     (add-to-list 'default-frame-alist '(font . "ricty-13.5")) ;fontsize指定
-      ;;   )
-      (if (eq system-type 'windows-nt)  ;windowsだったら
-          ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
-          ;; ショートカットで直接実行するとpathの設定がダメなので
-          ;; これで実行するようにする  "C:\gnupack\startup_emacs.exe"
-          (setq shell-file-name "bash")
-        (setenv "SHELL" shell-file-name)
-        (setq explicit-shell-file-name shell-file-name)
-        )
-      )
+    (if (eq system-type 'windows-nt)  ;windowsだったら
+        ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
+        ;; ショートカットで直接実行するとpathの設定がダメなので
+        ;; これで実行するようにする  "C:\gnupack\startup_emacs.exe"
+        (setq shell-file-name "bash")
+      (setenv "SHELL" shell-file-name)
+      (setq explicit-shell-file-name shell-file-name))
     ))
 
 (provide 'init)
