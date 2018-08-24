@@ -866,7 +866,9 @@
     ;; mozc-toolsを入れる
     ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
     ;;https://yo.eki.do/notes/emacs-windows-2017
-    ;;(if (unless system-type 'darwin) ;; macじゃなかったら
+    (if (eq system-type 'darwin);; macだったら
+        (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
+        )
     (if (eq system-type 'gnu/linux) ;; linuxだったら
       (unless (require 'mozc nil t) (package-install 'mozc))
       (setq default-input-method "japanese-mozc")
