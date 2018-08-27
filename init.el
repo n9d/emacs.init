@@ -866,24 +866,27 @@
     ;; mozc-toolsを入れる
     ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
     ;;https://yo.eki.do/notes/emacs-windows-2017
-    (if (eq system-type 'darwin);; macだったら
-        (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
-        )
-    (if (eq system-type 'gnu/linux) ;; linuxだったら
+    (when (eq system-type 'darwin);; macだったら
+      (define-key global-map (kbd "M-c") 'kill-ring-save)
+      (define-key global-map (kbd "M-v") 'yank)
+      (setq save-interprogram-paste-before-kill t)
+      (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
+      )
+    (when (eq system-type 'gnu/linux) ;; linuxだったら
       (unless (require 'mozc nil t) (package-install 'mozc))
       (setq default-input-method "japanese-mozc")
       ;;(setq default-input-method "japanese-mozc")
-      (define-key global-map [zenkaku-hankaku] 'toggle-input-method))
-
-    (if (eq system-type 'windows-nt)  ;windowsだったら
-        ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
-        ;; ショートカットで直接実行するとpathの設定がダメなので
-        ;; これで実行するようにする  "C:\gnupack\startup_emacs.exe"
-        (setq shell-file-name "bash")
+      (define-key global-map [zenkaku-hankaku] 'toggle-input-method)
+      )
+    (when (eq system-type 'windows-nt)  ;windowsだったら
+      ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
+      ;; ショートカットで直接実行するとpathの設定がダメなので
+      ;; これで実行するようにする  "C:\gnupack\startup_emacs.exe"
+      (setq shell-file-name "bash")
       (setenv "SHELL" shell-file-name)
-      (setq explicit-shell-file-name shell-file-name))
+      (setq explicit-shell-file-name shell-file-name)
+      )
     ))
-
 (provide 'init)
 
 ;;; init.el ends here
