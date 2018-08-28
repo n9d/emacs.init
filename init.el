@@ -375,7 +375,9 @@
 ;;; http://th.nao.ac.jp/MEMBER/zenitani/elisp-j.html#smart-compile
 (unless (require 'smart-compile nil t) (package-install 'smart-compile))
 ;;;(global-set-key (kbd "C-c C-c") 'smart-compile)
-(dolist (hook '(c-mode-hook)) ;;smartcompileを実行するmode-hookを登録していく
+;;(setq compile-command "node ")
+(dolist
+    (hook '(c-mode-hook js-mode-hook ruby-mode-hook python-mode-hook))  ;;smartcompileを実行するmode-hookを登録していく
   (add-hook hook
             (lambda ()
               (global-set-key (kbd "C-c c") 'smart-compile)
@@ -387,8 +389,15 @@
               )))
 
 ;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
-(if (boundp 'smart-compile-alist)
-    (if (file-exists-p (expand-file-name "~/sptv"))  (add-to-list 'smart-compile-alist `(,(expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
+(when (boundp 'smart-compile-alist)
+  (setq smart-compile-alist
+   (append smart-compile-alist
+   '(("\\.c\\'" . "gcc %f")
+     ("\\.rb\\'" . "ruby %f")
+     ("\\.py\\'" . "python %f")
+     ("\\.js\\'" . "node %f")
+   )))
+  (if (file-exists-p (expand-file-name "~/sptv"))  (add-to-list 'smart-compile-alist `(,(expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
   )
 
 
@@ -834,9 +843,14 @@
 ;;; http://hico-horiuchi.hateblo.jp/entry/20130415/1366010165 ; 分岐
 ;;; macのときは https://github.com/railwaycat/homebrew-emacsmacport で入れる
 (when window-system
-  (progn
     (require 'linum)  ;;行番号表示
     (global-linum-mode t);; 常にlinum-modeを有効
+
+    (setq select-active-regions nil)
+    (setq mouse-drag-copy-region t)
+    ;;(setq x-select-enable-primary t)
+    ;;(setq x-select-enable-clipboard nil)
+
 
     ;; font
     ;; http://qiita.com/melito/items/238bdf72237290bc6e42
@@ -869,6 +883,7 @@
     (when (eq system-type 'darwin);; macだったら
       (define-key global-map (kbd "M-c") 'kill-ring-save)
       (define-key global-map (kbd "M-v") 'yank)
+      (define-key global-map (kbd "M-g M-g") 'keyboard-quit)
       (setq save-interprogram-paste-before-kill t)
       (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
       )
@@ -877,6 +892,11 @@
       (setq default-input-method "japanese-mozc")
       ;;(setq default-input-method "japanese-mozc")
       (define-key global-map [zenkaku-hankaku] 'toggle-input-method)
+
+      ;; クリップボードが動悸しなかったらこれ
+      ;;(setq x-select-enable-primary t)
+      ;;(setq x-select-enable-clipboard nil)
+
       )
     (when (eq system-type 'windows-nt)  ;windowsだったら
       ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
@@ -886,7 +906,7 @@
       (setenv "SHELL" shell-file-name)
       (setq explicit-shell-file-name shell-file-name)
       )
-    ))
+    )
 (provide 'init)
 
 ;;; init.el ends here
