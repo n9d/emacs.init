@@ -392,12 +392,13 @@
     (hook '(c-mode-hook js-mode-hook ruby-mode-hook python-mode-hook))  ;;smartcompileを実行するmode-hookを登録していく
   (add-hook hook
             (lambda ()
-              (global-set-key (kbd "C-c c") 'smart-compile)
-              (define-key global-map [f5] (kbd "C-x C-s C-c c C-m"))
-              (define-key global-map [f6] 'next-error)
-              (global-set-key (kbd "C-c @") 'next-error)
-              (setq compilation-window-height 15)  ;; デフォルトは画面の下半分
-              (setq compilation-scroll-output t)
+              (local-set-key (kbd "C-c c") 'smart-compile)
+              (local-set-key [f5] (kbd "C-x C-s C-c c C-m"))
+              (local-set-key [f6] 'next-error)
+              (local-set-key (kbd "C-c @") 'next-error)
+              ;;(setq compilation-window-height 15)
+              (setq compilation-window-height (/ (frame-height) 3)) ;; デフォルトは画面の下半分→1/3
+              (setq compilation-scroll-output t) ;;コンパイル時スクロールon
               )))
 
 ;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
@@ -896,6 +897,7 @@
   ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
   ;;https://yo.eki.do/notes/emacs-windows-2017
   (when (eq system-type 'darwin);; macだったら
+    (mac-auto-ascii-mode 1) ;; ime入力中にC-xoで「お」が表示されないようにする（ただしIMEはoffになる）
     (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
     (setq mac-option-modifier 'super) ;; option を superへ
     (define-key global-map (kbd "s-¥") [?\\]) ;; 一応 optionでもでるように
