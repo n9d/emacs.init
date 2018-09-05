@@ -122,7 +122,7 @@
         (insert (company-strip-prefix candidate))
       (if (equal company-prefix candidate)
           (company-select-next)
-          (delete-region (- (point) (length company-prefix)) (point))
+        (delete-region (- (point) (length company-prefix)) (point))
         (insert candidate))
       )))
 (defun company-complete-common2 ()
@@ -149,6 +149,12 @@
 (elscreen-start)
 (define-key elscreen-map (kbd "C-z") 'elscreen-toggle) ; C-zC-zを一つ前のwindowにする
 (define-key my-helm-map (kbd "C-;") 'elscreen-toggle) ; C-;C-;を一つ前のwindowにする
+(define-key my-helm-map (kbd "C-p") 'elscreen-previous)
+(define-key my-helm-map (kbd "C-n") 'elscreen-next)
+(define-key my-helm-map (kbd "<up>") 'elscreen-previous)
+(define-key my-helm-map (kbd "<left>") 'elscreen-previous)
+(define-key my-helm-map (kbd "<down>") 'elscreen-next)
+(define-key my-helm-map (kbd "<right>") 'elscreen-next)
 (dolist (x '(0 1 2 3 4 5 6 7 8 9)) (define-key my-helm-map (kbd (number-to-string x)) 'elscreen-jump)) ; C-;0-9をelscreen切り替え
 ;;(setq elscreen-tab-display-kill-screen nil) ;タブの先頭に[x]を表示しない
 ;;(setq elscreen-tab-display-control nil) ; header-lineの先頭に[<->]を表示しない
@@ -193,16 +199,23 @@
 ;;(require 'org-mode)
 (defun my-org-mode-hook ()
   "My org mode hook."
-  (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t))
+  (progn
+    (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t)
+    (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
+    (when (eq system-type 'darwin) ;; macのときだけorgの段落キーバインドを変える
+      (define-key org-mode-map (kbd "M-{") 'elscreen-previous)
+      (define-key org-mode-map (kbd "M-}") 'elscreen-next))
+    ))
+
 (add-hook 'org-mode-hook #'my-org-mode-hook)
 ;;(require ‘org-babel-init)
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
 (setq org-log-done 'time);; DONEの時刻を記録
 ;; メモ書きに大変便利、結果は#+begin_src ruby :exports resultsで出力
-;(org-babel-do-load-languages ;
-; 'org-babel-load-languages
-; '((dot .t) (ditaa .t) (gnuplot .t) (emacs-lisp .t)
-;   (ruby .t) (sh .t) )) ;;デフォルトはemacslispのみ
+                                        ;(org-babel-do-load-languages ;
+                                        ; 'org-babel-load-languages
+                                        ; '((dot .t) (ditaa .t) (gnuplot .t) (emacs-lisp .t)
+                                        ;   (ruby .t) (sh .t) )) ;;デフォルトはemacslispのみ
 ;; ditaaの設定
 ;; #+begin_src ditaa :file images/ditaa-test.png :cmdline -s 2 日本語を通したいときには左記のヘッダにする
 ;; http://d.hatena.ne.jp/tamura70/20100317/org を参照のこと
@@ -212,7 +225,6 @@
 
 ;;;
 ;;; 拡張したpictureモードC-矢印で線がかける
-;(define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
 (add-hook 'picture-mode-hook 'picture-mode-init2)
 (autoload 'picture-mode-init "picture-init")
 (require 'picture)
@@ -238,27 +250,27 @@
   nil)
 
 (defun picture-line-draw-str (h v str) "Picture line draw str.  H V STR."
-  (cond ((/= h 0) (cond ((string= str "|") "+") ((string= str "+") "+") (t "-")))
-        ((/= v 0) (cond ((string= str "-") "+") ((string= str "+") "+") (t "|")))
-        (t str)))
+       (cond ((/= h 0) (cond ((string= str "|") "+") ((string= str "+") "+") (t "-")))
+             ((/= v 0) (cond ((string= str "-") "+") ((string= str "+") "+") (t "|")))
+             (t str)))
 
 (defun picture-line-delete-str (h v str) "Picture line delete str.  H V STR."
-  (cond ((/= h 0) (cond ((string= str "|") "|") ((string= str "+") "|") (t " ")))
-        ((/= v 0) (cond ((string= str "-") "-") ((string= str "+") "-") (t " ")))
-        (t str)))
+       (cond ((/= h 0) (cond ((string= str "|") "|") ((string= str "+") "|") (t " ")))
+             ((/= v 0) (cond ((string= str "-") "-") ((string= str "+") "-") (t " ")))
+             (t str)))
 
 (defun picture-line-draw (num v h del)
   "Picture line draw.  NUM V H DEL."
   (let ((indent-tabs-mode nil)
-    (old-v picture-vertical-step)
-    (old-h picture-horizontal-step))
+        (old-v picture-vertical-step)
+        (old-h picture-horizontal-step))
     (setq picture-vertical-step v)
     (setq picture-horizontal-step h)
     ;; (setq picture-desired-column (current-column))
     (while (>= num 0)
       (when (= num 0)
-    (setq picture-vertical-step 0)
-    (setq picture-horizontal-step 0))
+        (setq picture-vertical-step 0)
+        (setq picture-horizontal-step 0))
       (setq num (1- num))
       (let (str new-str)
         (setq str (if (eobp) " " (buffer-substring (point) (+ (point) 1))))
@@ -272,8 +284,8 @@
 (defun picture-region-move (start end num v h)
   "Picture line region move.  START END NUM V H."
   (let ((indent-tabs-mode nil)
-    (old-v picture-vertical-step)
-    (old-h picture-horizontal-step) rect)
+        (old-v picture-vertical-step)
+        (old-h picture-horizontal-step) rect)
     (setq picture-vertical-step v)
     (setq picture-horizontal-step h)
     (setq picture-desired-column (current-column))
@@ -391,12 +403,12 @@
 ;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
 (when (boundp 'smart-compile-alist)
   (setq smart-compile-alist
-   (append smart-compile-alist
-   '(("\\.c\\'" . "gcc %f")
-     ("\\.rb\\'" . "ruby %f")
-     ("\\.py\\'" . "python %f")
-     ("\\.js\\'" . "node %f")
-   )))
+        (append smart-compile-alist
+                '(("\\.c\\'" . "gcc %f")
+                  ("\\.rb\\'" . "ruby %f")
+                  ("\\.py\\'" . "python %f")
+                  ("\\.js\\'" . "node %f")
+                  )))
   (if (file-exists-p (expand-file-name "~/sptv"))  (add-to-list 'smart-compile-alist `(,(expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
   )
 
@@ -430,60 +442,60 @@
 ;; 補完にnodejsのternを用いる
 ;; sudo npm install -g tern
 (when (executable-find "tern")
-    (unless (file-exists-p (expand-file-name "~/.tern-config")) ;.tern-configがなかったら作る
-      (with-temp-buffer
-        (insert "{\n    \"libs\": [\n        \"browser\",\n        \"jquery\"\n    ],\n    \"loadEagerly\": [\n        \"importantfile.js\"\n    ],\n    \"plugins\": {\n        \"requirejs\": {\n            \"baseURL\": \"./\",\n            \"paths\": {}\n        }\n    }\n}\n")
-        (write-file (expand-file-name "~/.tern-config"))))
+  (unless (file-exists-p (expand-file-name "~/.tern-config")) ;.tern-configがなかったら作る
+    (with-temp-buffer
+      (insert "{\n    \"libs\": [\n        \"browser\",\n        \"jquery\"\n    ],\n    \"loadEagerly\": [\n        \"importantfile.js\"\n    ],\n    \"plugins\": {\n        \"requirejs\": {\n            \"baseURL\": \"./\",\n            \"paths\": {}\n        }\n    }\n}\n")
+      (write-file (expand-file-name "~/.tern-config"))))
 
-    (unless (require 'company-tern nil t) (package-install 'company-tern))
-    (setq company-tern-property-marker "")
-    (defun company-tern-depth (candidate)
-      "Return depth attribute for CANDIDATE. 'nil' entries are treated as 0."
-      (let ((depth (get-text-property 0 'depth candidate)))
-        (if (eq depth nil) 0 depth)))
-    ;;(add-hook 'js2-mode-hook 'tern-mode) ; 自分が使っているjs用メジャーモードに変える
-    ;;company-backendsの切り替え
-    (dolist (hook '(js-mode-hook
-                    js2-mode-hook
-                    ;;js3-mode-hook
-                    ;;inferior-js-mode-hook
-                    ))
-      (add-hook hook
-                (lambda ()
-                  (tern-mode t)
-                  ;;(add-to-list (make-local-variable 'company-backends) 'company-tern) ;; ternのみが補完候補
-                  (add-to-list (make-local-variable 'company-backends) '(company-tern :with company-dabbrev-code)) ;;バッファ上の他の単語も候補にする
-                  ;; project(git)内の関数とかも補完候補にしたい
+  (unless (require 'company-tern nil t) (package-install 'company-tern))
+  (setq company-tern-property-marker "")
+  (defun company-tern-depth (candidate)
+    "Return depth attribute for CANDIDATE. 'nil' entries are treated as 0."
+    (let ((depth (get-text-property 0 'depth candidate)))
+      (if (eq depth nil) 0 depth)))
+  ;;(add-hook 'js2-mode-hook 'tern-mode) ; 自分が使っているjs用メジャーモードに変える
+  ;;company-backendsの切り替え
+  (dolist (hook '(js-mode-hook
+                  js2-mode-hook
+                  ;;js3-mode-hook
+                  ;;inferior-js-mode-hook
                   ))
-      )
+    (add-hook hook
+              (lambda ()
+                (tern-mode t)
+                ;;(add-to-list (make-local-variable 'company-backends) 'company-tern) ;; ternのみが補完候補
+                (add-to-list (make-local-variable 'company-backends) '(company-tern :with company-dabbrev-code)) ;;バッファ上の他の単語も候補にする
+                ;; project(git)内の関数とかも補完候補にしたい
+                ))
     )
+  )
 
 ;; eslintによるflycheck
 ;;https://joppot.info/2017/04/12/3777
 ;; sudo npm install -g eslint
 (when (executable-find "eslint")
-    (unless (file-exists-p (expand-file-name "~/.eslintrc")) ;.eslintrcがなかったら作る
-      (with-temp-buffer
-        (insert "{\n  \"env\" : {\n    \"es6\": true\n  },\n  \"ecmaFeatures\": {\n    \"jsx\": true\n  }\n}\n")
-        (write-file (expand-file-name "~/.eslintrc"))))
-    (dolist (hook '(js-mode-hook
-                    js2-mode-hook
-                    ;;js3-mode-hook
-                    ;;inferior-js-mode-hook
-                    ))
-      (add-hook hook ; jshint,jscsを無効にする
-                (lambda ()
-                  (eval-after-load 'flycheck
-                    '(custom-set-variables
-                      '(flycheck-disabled-checkers '(javascript-jshint javascript-jscs))))
-                  (setq js2-include-browser-externs nil)
-                  (setq js2-mode-show-parse-errors nil)
-                  (setq js2-mode-show-strict-warnings nil)
-                  (setq js2-highlight-external-variables nil)
-                  (setq js2-include-jslint-globals nil)
+  (unless (file-exists-p (expand-file-name "~/.eslintrc")) ;.eslintrcがなかったら作る
+    (with-temp-buffer
+      (insert "{\n  \"env\" : {\n    \"es6\": true\n  },\n  \"ecmaFeatures\": {\n    \"jsx\": true\n  }\n}\n")
+      (write-file (expand-file-name "~/.eslintrc"))))
+  (dolist (hook '(js-mode-hook
+                  js2-mode-hook
+                  ;;js3-mode-hook
+                  ;;inferior-js-mode-hook
                   ))
-      )
+    (add-hook hook ; jshint,jscsを無効にする
+              (lambda ()
+                (eval-after-load 'flycheck
+                  '(custom-set-variables
+                    '(flycheck-disabled-checkers '(javascript-jshint javascript-jscs))))
+                (setq js2-include-browser-externs nil)
+                (setq js2-mode-show-parse-errors nil)
+                (setq js2-mode-show-strict-warnings nil)
+                (setq js2-highlight-external-variables nil)
+                (setq js2-include-jslint-globals nil)
+                ))
     )
+  )
 
 
 ;;;
@@ -536,12 +548,12 @@
 
 ;;(flycheck-add-mode 'javascript-eslint 'web-mode)
 
- (add-hook 'web-mode-hook
-           (lambda ()
-             (when (or (equal web-mode-content-type "javascript")
-                       (equal web-mode-content-type "jsx"))
-               (flycheck-add-mode 'javascript-eslint 'web-mode)
-               (flycheck-mode))))
+(add-hook 'web-mode-hook
+          (lambda ()
+            (when (or (equal web-mode-content-type "javascript")
+                      (equal web-mode-content-type "jsx"))
+              (flycheck-add-mode 'javascript-eslint 'web-mode)
+              (flycheck-mode))))
 
 (add-hook 'web-mode-hook 'my-web-mode-hook)
 
@@ -687,16 +699,16 @@
  )
 
 ;; custom-set-fase は M-x customize-face で起動できる
-;(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- ;'(company-preview-common ((t (:inherit company-preview :foreground "lightgrey"))))
- ;'(company-scrollbar-bg ((t (:background "gray40"))))
- ;'(company-scrollbar-fg ((t (:background "orange"))))
- ;'(company-tooltip ((t (:background "lightgrey" :foreground "black"))))
- ;'(company-tooltip-selection ((t (:background "steelblue")))))
+                                        ;(custom-set-faces
+;; custom-set-faces was added by Custom.
+;; If you edit it by hand, you could mess it up, so be careful.
+;; Your init file should contain only one such instance.
+;; If there is more than one, they won't work right.
+                                        ;'(company-preview-common ((t (:inherit company-preview :foreground "lightgrey"))))
+                                        ;'(company-scrollbar-bg ((t (:background "gray40"))))
+                                        ;'(company-scrollbar-fg ((t (:background "orange"))))
+                                        ;'(company-tooltip ((t (:background "lightgrey" :foreground "black"))))
+                                        ;'(company-tooltip-selection ((t (:background "steelblue")))))
 
 ;;; 自分関数
 (defun my/copy-current-path ()
@@ -843,70 +855,79 @@
 ;;; http://hico-horiuchi.hateblo.jp/entry/20130415/1366010165 ; 分岐
 ;;; macのときは https://github.com/railwaycat/homebrew-emacsmacport で入れる
 (when window-system
-    (require 'linum)  ;;行番号表示
-    (global-linum-mode t);; 常にlinum-modeを有効
+  (tool-bar-mode 0)
+  (require 'linum)  ;;行番号表示
+  (global-linum-mode t);; 常にlinum-modeを有効
 
-    (setq select-active-regions nil)
-    (setq mouse-drag-copy-region t)
+  (setq select-active-regions nil)
+  (setq mouse-drag-copy-region t)
+  ;;(setq x-select-enable-primary t)
+  ;;(setq x-select-enable-clipboard nil)
+
+  ;; リージョンの色を変える
+  (set-face-background 'region "SeaGreen")
+
+  ;; font
+  ;; http://qiita.com/melito/items/238bdf72237290bc6e42
+  ;; https://qiita.com/segur/items/50ae2697212a7bdb7c7f mac
+  ;; fc-cache -fv でキャッシュを行う
+  (when (or (file-exists-p (expand-file-name "~/.fonts/Ricty-Regular.ttf")) (file-exists-p (expand-file-name "~/Library/Fonts/Ricty-Regular.ttf")))
+    (let* ((size 12)
+           (asciifont "Ricty")
+           (jpfont "Ricty")
+           (h (* size 10))
+           (fontspec (font-spec :family asciifont))
+           (jp-fontspec (font-spec :family jpfont)))
+      (set-face-attribute 'default nil :family asciifont :height h)
+      (set-fontset-font nil 'japanese-jisx0213.2004-1 jp-fontspec)
+      (set-fontset-font nil 'japanese-jisx0213-2 jp-fontspec)
+      (set-fontset-font nil 'katakana-jisx0201 jp-fontspec)
+      (set-fontset-font nil '(#x0080 . #x024F) fontspec)
+      (set-fontset-font nil '(#x0370 . #x03FF) fontspec)))
+
+  ;; ずれ確認用
+  ;; 0123456789012345678901234567890123456789
+  ;; ｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵ
+  ;; あいうえおあいうえおあいうえおあいうえお
+
+  ;; ime linuxのみ mozcで入力
+  ;;http://d.hatena.ne.jp/kitokitoki/20120925/p2
+  ;; mozc-toolsを入れる
+  ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
+  ;;https://yo.eki.do/notes/emacs-windows-2017
+  (when (eq system-type 'darwin);; macだったら
+    (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
+    (setq mac-option-modifier 'super) ;; option を superへ
+    (define-key global-map (kbd "s-¥") [?\\]) ;; 一応 optionでもでるように
+    (define-key global-map (kbd "<s-left>") 'elscreen-previous)
+    (define-key global-map (kbd "<s-right>") 'elscreen-next)
+    (define-key global-map (kbd "M-{") 'elscreen-previous)
+    (define-key global-map (kbd "M-}") 'elscreen-next)
+    (define-key global-map (kbd "M-c") 'kill-ring-save)
+    (define-key global-map (kbd "M-v") 'yank)
+    (define-key global-map (kbd "M-g M-g") 'keyboard-quit)
+    (setq save-interprogram-paste-before-kill t)
+    )
+  (when (eq system-type 'gnu/linux) ;; linuxだったら
+    (unless (require 'mozc nil t) (package-install 'mozc))
+    (setq default-input-method "japanese-mozc")
+    ;;(setq default-input-method "japanese-mozc")
+    (define-key global-map [zenkaku-hankaku] 'toggle-input-method)
+
+    ;; クリップボードが動悸しなかったらこれ
     ;;(setq x-select-enable-primary t)
     ;;(setq x-select-enable-clipboard nil)
 
-
-    ;; font
-    ;; http://qiita.com/melito/items/238bdf72237290bc6e42
-    ;; https://qiita.com/segur/items/50ae2697212a7bdb7c7f mac
-    ;; fc-cache -fv でキャッシュを行う
-    (when (or (file-exists-p (expand-file-name "~/.fonts/Ricty-Regular.ttf")) (file-exists-p (expand-file-name "~/Library/Fonts/Ricty-Regular.ttf")))
-      (let* ((size 12)
-             (asciifont "Ricty")
-             (jpfont "Ricty")
-             (h (* size 10))
-             (fontspec (font-spec :family asciifont))
-             (jp-fontspec (font-spec :family jpfont)))
-        (set-face-attribute 'default nil :family asciifont :height h)
-        (set-fontset-font nil 'japanese-jisx0213.2004-1 jp-fontspec)
-        (set-fontset-font nil 'japanese-jisx0213-2 jp-fontspec)
-        (set-fontset-font nil 'katakana-jisx0201 jp-fontspec)
-        (set-fontset-font nil '(#x0080 . #x024F) fontspec)
-        (set-fontset-font nil '(#x0370 . #x03FF) fontspec)))
-
-    ;; ずれ確認用
-    ;; 0123456789012345678901234567890123456789
-    ;; ｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵ
-    ;; あいうえおあいうえおあいうえおあいうえお
-
-    ;; ime linuxのみ mozcで入力
-    ;;http://d.hatena.ne.jp/kitokitoki/20120925/p2
-    ;; mozc-toolsを入れる
-    ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
-    ;;https://yo.eki.do/notes/emacs-windows-2017
-    (when (eq system-type 'darwin);; macだったら
-      (define-key global-map (kbd "M-c") 'kill-ring-save)
-      (define-key global-map (kbd "M-v") 'yank)
-      (define-key global-map (kbd "M-g M-g") 'keyboard-quit)
-      (setq save-interprogram-paste-before-kill t)
-      (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
-      )
-    (when (eq system-type 'gnu/linux) ;; linuxだったら
-      (unless (require 'mozc nil t) (package-install 'mozc))
-      (setq default-input-method "japanese-mozc")
-      ;;(setq default-input-method "japanese-mozc")
-      (define-key global-map [zenkaku-hankaku] 'toggle-input-method)
-
-      ;; クリップボードが動悸しなかったらこれ
-      ;;(setq x-select-enable-primary t)
-      ;;(setq x-select-enable-clipboard nil)
-
-      )
-    (when (eq system-type 'windows-nt)  ;windowsだったら
-      ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
-      ;; ショートカットで直接実行するとpathの設定がダメなので
-      ;; これで実行するようにする  "C:\gnupack\startup_emacs.exe"
-      (setq shell-file-name "bash")
-      (setenv "SHELL" shell-file-name)
-      (setq explicit-shell-file-name shell-file-name)
-      )
     )
+  (when (eq system-type 'windows-nt)  ;windowsだったら
+    ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
+    ;; ショートカットで直接実行するとpathの設定がダメなので
+    ;; これで実行するようにする  "C:\gnupack\startup_emacs.exe"
+    (setq shell-file-name "bash")
+    (setenv "SHELL" shell-file-name)
+    (setq explicit-shell-file-name shell-file-name)
+    )
+  )
 (provide 'init)
 
 ;;; init.el ends here
