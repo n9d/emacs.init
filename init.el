@@ -393,12 +393,12 @@
   (add-hook hook
             (lambda ()
               (local-set-key (kbd "C-c c") 'smart-compile)
-              (define-key global-map [f5] (kbd "C-x C-s C-c c C-m"))
-              (define-key global-map [f6] 'next-error)
-              (global-set-key (kbd "C-c @") 'next-error)
+              (local-set-key [f5] (kbd "C-x C-s C-c c C-m"))
+              (local-set-key [f6] 'next-error)
+              (local-set-key (kbd "C-c @") 'next-error)
               ;;(setq compilation-window-height 15)
               (setq compilation-window-height (/ (frame-height) 3)) ;; デフォルトは画面の下半分→1/3
-              (setq compilation-scroll-output t)
+              (setq compilation-scroll-output t) ;;コンパイル時スクロールon
               )))
 
 ;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
