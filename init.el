@@ -145,6 +145,7 @@
 
 
 ;;; elscreen  emacs版screen キーバインドが気に入らない
+;;; elscreen のリナンバーは https://github.com/momomo5717/elscreen-outof-limit-mode
 (unless (require 'elscreen nil t) (package-install 'elscreen))
 (elscreen-start)
 (define-key elscreen-map (kbd "C-z") 'elscreen-toggle) ; C-zC-zを一つ前のwindowにする
@@ -160,12 +161,24 @@
 ;;(setq elscreen-tab-display-control nil) ; header-lineの先頭に[<->]を表示しない
 (define-key global-map (kbd "C-x C-f") 'elscreen-find-file)
 (define-key global-map (kbd "C-x d") 'elscreen-dired)
+;; https://gist.github.com/momomo5717 からrenumberをもらった
+(defun elscreen-renumber ()
+  "Elscreen renumber."
+  (interactive)
+  (cl-loop for i from 0 for s in (sort (elscreen-get-screen-list) '<) do
+           (when (/= i s)
+             (setf (car (assoc s (elscreen-get-conf-list 'screen-property))) i
+              (car (member s (elscreen-get-conf-list 'screen-history))) i
+              (car (assoc s (elscreen-get-screen-to-name-alist-cache))) i)))
+  (elscreen-tab-update t))
 (defun elscreen-kill-and-kill-buffer ()
   "Elscreen kill and kill buffer."
   (interactive)
   (unless (string= (buffer-name) "*scratch*") (kill-buffer))
   ;;(kill-buffer)
-  (elscreen-kill))
+  (elscreen-kill)
+  (elscreen-renumber) ;; タブナンバーを振り付けする、ショートカットの関係上本当は1カラにしたい http://d.hatena.ne.jp/ken_m/20110607/1307451681
+  )
 (define-key global-map (kbd "C-x k") 'elscreen-kill-and-kill-buffer)
 ;;  (if (eq 1 (length (elscreen-get-screen-list))) ;;elscreenのタブの数はこれでわかる
 
