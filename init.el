@@ -666,6 +666,29 @@
    "Major mode for editing Markdown files" t)
   (add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
   (add-to-list 'auto-mode-alist '("\\.md\\'" . gfm-mode))
+  (eval-after-load "markdown-mode"
+  '(defalias 'markdown-add-xhtml-header-and-footer 'my/markdown-add-html5-header-and-footer))
+(defun my/markdown-add-html5-header-and-footer (title)
+    "Wrap XHTML header and footer with given TITLE around current buffer."
+    (goto-char (point-min))
+    (insert "<!doctype html>\n"
+        "<html lang=\"ja\">\n"
+        "<head>\n  <title>")
+    (insert title)
+    (insert "</title>\n")
+    (insert "  <meta charset=\"utf-8\">\n")
+    (insert "  <link href=\"https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/2.8.0/github-markdown.min.css\" rel=\"stylesheet\">\n")
+    (insert "  <style>body { zoom: 150%; } body > h1:not(:first-child) { border: 0; page-break-before: always; } h2{ page-break-before: always; }</style>\n")
+    (insert "  <style>\n")
+    (insert "  @media screen { div.footer { display: none; } }\n")
+    (insert "  @media print { @page { size: legal landscape; margin-top: 0; margin-bottom: 6mm; } h1 { padding-top: 50mm; } h2 { padding-top: 0 } div.footer { position: fixed; right: 0; bottom: 0; } }\n")
+    (insert "  </style>\n")
+    (insert "</head>\n"
+        "<body class=\"markdown-body\">\n")
+    (goto-char (point-max))
+    (insert "\n"
+            "<div class=\"footer\"><img src=\"https://user-images.githubusercontent.com/13231263/31114194-d9656554-a857-11e7-8a87-245bf60475be.png\" style=\"width: 80px\"></div>"
+            "</body>\n" "</html>\n"))
   )
 
 ;;; ielm (emacs lisp(elisp)のREPL)
