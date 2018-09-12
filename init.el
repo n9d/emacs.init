@@ -153,6 +153,7 @@
 
 ;;; elscreen  emacs版screen キーバインドが気に入らない
 ;;; elscreen のリナンバーは https://github.com/momomo5717/elscreen-outof-limit-mode
+;;; タブをフレームタイトルに入れる https://qiita.com/kaz-yos/items/9dffd94694adf59449b7
 (unless (require 'elscreen nil t) (package-install 'elscreen))
 (elscreen-start)
 (define-key elscreen-map (kbd "C-z") 'elscreen-toggle) ; C-zC-zを一つ前のwindowにする
@@ -652,6 +653,20 @@
 (eval-after-load 'company '(push 'company-robe company-backends))
 
 
+;;;
+;;; markdown mode
+;;;
+;;; https://qiita.com/howking/items/bcc4e05bfb16777747fa を見て研究する
+(when (executable-find "jq")
+  (unless (require 'markdown-mode nil t) (package-install 'markdown-mode))
+  (unless (require 'markdown-mode+ nil t) (package-install 'markdown-mode+))
+  ;; markdownコマンドは github の markdown api
+  (setq markdown-command "jq --slurp --raw-input '{\"text\": \"\\(.)\", \"mode\": \"gfm\"}' | curl -sS --data @- https://api.github.com/markdown")
+  (autoload 'markdown-mode "markdown-mode"
+   "Major mode for editing Markdown files" t)
+  (add-to-list 'auto-mode-alist '("\\.markdown\\'" . markdown-mode))
+  (add-to-list 'auto-mode-alist '("\\.md\\'" . gfm-mode))
+  )
 
 ;;; ielm (emacs lisp(elisp)のREPL)
 ;; カーソルキーの上下を履歴にする
@@ -712,7 +727,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (mozc inf-ruby helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
+    (markdown-mode+ mozc inf-ruby helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
