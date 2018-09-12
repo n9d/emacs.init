@@ -55,6 +55,13 @@
 (define-key my-helm-map (kbd "o") 'helm-occur)
 (define-key my-helm-map (kbd "x") 'helm-M-x)
 (define-key my-helm-map (kbd "f") 'helm-browse-project) ;; git内に関係するファイル全部を絞り込める
+
+;; helm-find-filesで . .. を削除する https://qiita.com/ponpoko1968/items/1d2378fd3f9ed3928978
+(advice-add 'helm-ff-filter-candidate-one-by-one
+        :around (lambda (fcn file)
+                  (unless (string-match "\\(?:/\\|\\`\\)\\.\\{1,2\\}\\'" file)
+                    (funcall fcn file))))
+
 ;; windows版だと文字コード問題が起こる
 ;; http://qiita.com/fujii_0v0/items/d6e96304e913027f48ac 時期を見てコンパイル方法を確立
 
@@ -159,7 +166,8 @@
 (dolist (x '(0 1 2 3 4 5 6 7 8 9)) (define-key my-helm-map (kbd (number-to-string x)) 'elscreen-jump)) ; C-;0-9をelscreen切り替え
 ;;(setq elscreen-tab-display-kill-screen nil) ;タブの先頭に[x]を表示しない
 ;;(setq elscreen-tab-display-control nil) ; header-lineの先頭に[<->]を表示しない
-(define-key global-map (kbd "C-x C-f") 'elscreen-find-file)
+;;(define-key global-map (kbd "C-x C-f") 'elscreen-find-file)
+;;; ↑ <tab>のアクションに 同じwindowで開くを入れる
 (define-key global-map (kbd "C-x d") 'elscreen-dired)
 ;; https://gist.github.com/momomo5717 からrenumberをもらった
 (defun elscreen-renumber ()
@@ -187,7 +195,8 @@
 ;;; elscreenのインターフェイスをhelmにする
 ;;; またhelmのactionのデフォルトをelscreenにする
 (unless (require 'helm-elscreen nil t) (package-install 'helm-elscreen))
-(setq helm-type-file-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-type-file-actions))
+(setq helm-type-file-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-type-file-actions)) ;;helm-findのとき
+(setq helm-find-files-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-find-files-actions)) ;;helm-find-filesはこちら
 (setq helm-type-buffer-actions (cons '("Find buffer elscreen" . helm-elscreen-find-buffer) helm-type-buffer-actions))
 
 
