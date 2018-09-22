@@ -970,15 +970,17 @@
     (define-key global-map (kbd "M-g M-g") 'keyboard-quit)
     (setq save-interprogram-paste-before-kill t)
     )
-  (when (eq system-type 'gnu/linux) ;; linuxだったら
-    (unless (require 'mozc nil t) (package-install 'mozc))
-    (setq default-input-method "japanese-mozc")
-    ;;(setq default-input-method "japanese-mozc")
-    (define-key global-map [zenkaku-hankaku] 'toggle-input-method)
 
-    ;; クリップボードが動悸しなかったらこれ
-    ;;(setq x-select-enable-primary t)
-    ;;(setq x-select-enable-clipboard nil)
+  (when (eq system-type 'gnu/linux) ;; linuxだったら
+    ;;(unless (require 'mozc nil t) (package-install 'mozc))
+    ;;(setq default-input-method "japanese-mozc")
+    ;;(setq default-input-method "japanese-mozc")
+    ;;(define-key global-map [zenkaku-hankaku] 'toggle-input-method)
+
+    (setq x-select-enable-primary t)
+    (setq x-select-enable-clipboard nil)
+    (define-key global-map (kbd "<s-left>") 'elscreen-previous)
+    (define-key global-map (kbd "<s-right>") 'elscreen-next)
 
     )
   (when (eq system-type 'windows-nt)  ;windowsだったら
