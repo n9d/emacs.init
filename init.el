@@ -633,24 +633,44 @@
 ;;;
 ;; https://qiita.com/kod314/items/9a56983f0d70f57420b1 を参考にした
 ;; inf-ruby irbをバッファで起動する
-(unless (require 'inf-ruby nil t) (package-install 'inf-ruby))
-(autoload 'inf-ruby-minor-mode "inf-ruby" "Run an inferior Ruby process" t)
-(add-hook 'ruby-mode-hook 'inf-ruby-minor-mode)
+(when (executable-find "pry") ;; pryが必要
+  (unless (require 'inf-ruby nil t) (package-install 'inf-ruby))
+  (autoload 'inf-ruby-minor-mode "inf-ruby" "Run an inferior Ruby process" t)
+  (add-hook 'ruby-mode-hook 'inf-ruby-minor-mode)
 
-;; do endなどの補完
-;; 通常の electricのほうが使いやすいので切る
-;;(unless (require 'ruby-electric nil t) (package-install 'ruby-electric))
-;;(add-hook 'ruby-mode-hook '(lambda () (ruby-electric-mode t)))
-;;(setq ruby-electric-expand-delimiters-list nil)
+  ;; do endなどの補完
+  ;; 通常の electricのほうが使いやすいので切る
+  ;;(unless (require 'ruby-electric nil t) (package-install 'ruby-electric))
+  ;;(add-hook 'ruby-mode-hook '(lambda () (ruby-electric-mode t)))
+  ;;(setq ruby-electric-expand-delimiters-list nil)
 
-;; 補完機能
-;; pryが必要
-;; M-x inf-ruby
-;; M-x robe-startしないとオムニ補完しない
-(unless (require 'robe nil t) (package-install 'robe))
-(add-hook 'ruby-mode-hook 'robe-mode)
-(autoload 'robe-mode "robe" "Code navigation, documentation lookup and completion for Ruby" t nil)
-(eval-after-load 'company '(push 'company-robe company-backends))
+  ;; 補完機能
+
+  ;; M-x inf-ruby
+  ;; M-x robe-startしないとオムニ補完しない → した
+  ;; https://github.com/dgutov/robe
+  ;; 懸念点 railsのフォルダ等でinf-rubyが確立していない
+  (unless (require 'robe nil t) (package-install 'robe))
+  (autoload 'robe-mode "robe" "Code navigation, documentation lookup and completion for Ruby" t nil)
+  ;;(add-hook 'ruby-mode-hook 'robe-mode)
+  (add-hook 'ruby-mode-hook
+            (lambda ()
+              (let ((buffer (current-buffer)))
+                (delete-other-windows) ;;現時点ではコンパイル等の他のwindowを閉じる
+                (inf-ruby) ;; inf-rubyを背面で立ち上げる方法がわからない。
+                (delete-window (selected-window)) ;; 大体inf-ruby
+                (set-buffer buffer)
+                )
+              (robe-mode)
+              (robe-start)
+              (eval-after-load 'company '(push 'company-robe company-backends))
+
+              ;; F5を押したときに *ruby*バッファを画面分割して ruby-send-region(C-cC-r)を送る
+              ;; フレーム分割覚えてなかった。
+
+              ))
+
+  )
 
 
 ;;;
@@ -927,36 +947,20 @@
 
   ;; リージョンの色を変える
   (set-face-background 'region "SeaGreen")
+  )
 
-  ;; font
-  ;; http://qiita.com/melito/items/238bdf72237290bc6e42
-  ;; https://qiita.com/segur/items/50ae2697212a7bdb7c7f mac
-  ;; fc-cache -fv でキャッシュを行う
-  (when (or (file-exists-p (expand-file-name "~/.fonts/Ricty-Regular.ttf")) (file-exists-p (expand-file-name "~/Library/Fonts/Ricty-Regular.ttf")))
-    (let* ((size 12)
-           (asciifont "Ricty")
-           (jpfont "Ricty")
-           (h (* size 10))
-           (fontspec (font-spec :family asciifont))
-           (jp-fontspec (font-spec :family jpfont)))
-      (set-face-attribute 'default nil :family asciifont :height h)
-      (set-fontset-font nil 'japanese-jisx0213.2004-1 jp-fontspec)
-      (set-fontset-font nil 'japanese-jisx0213-2 jp-fontspec)
-      (set-fontset-font nil 'katakana-jisx0201 jp-fontspec)
-      (set-fontset-font nil '(#x0080 . #x024F) fontspec)
-      (set-fontset-font nil '(#x0370 . #x03FF) fontspec)))
+;; Windows
+(when (and window-system (eq system-type 'windows-nt))  ;windowsだったら
+  ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
+  ;; ショートカットで直接実行するとpathの設定がダメなので
+  ;; これで実行するようにする  "C:\gnupack\startup_emacs.exe"
+  (setq shell-file-name "bash")
+  (setenv "SHELL" shell-file-name)
+  (setq explicit-shell-file-name shell-file-name)
+  )
 
-  ;; ずれ確認用
-  ;; 0123456789012345678901234567890123456789
-  ;; ｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵ
-  ;; あいうえおあいうえおあいうえおあいうえお
-
-  ;; ime linuxのみ mozcで入力
-  ;;http://d.hatena.ne.jp/kitokitoki/20120925/p2
-  ;; mozc-toolsを入れる
-  ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
-  ;;https://yo.eki.do/notes/emacs-windows-2017
-  (when (eq system-type 'darwin);; macだったら
+;; MACだったら
+(when (and window-system (eq system-type 'darwin))
     (mac-auto-ascii-mode 1) ;; ime入力中にC-xoで「お」が表示されないようにする（ただしIMEはoffになる）
     (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
     (setq mac-option-modifier 'super) ;; option を superへ
@@ -971,27 +975,66 @@
     (setq save-interprogram-paste-before-kill t)
     )
 
-  (when (eq system-type 'gnu/linux) ;; linuxだったら
-    ;;(unless (require 'mozc nil t) (package-install 'mozc))
-    ;;(setq default-input-method "japanese-mozc")
-    ;;(setq default-input-method "japanese-mozc")
-    ;;(define-key global-map [zenkaku-hankaku] 'toggle-input-method)
+;; Linux
+(when (and window-system (eq system-type 'gnu/linux))
+  ;;(unless (require 'mozc nil t) (package-install 'mozc))
+  ;;(setq default-input-method "japanese-mozc")
+  ;;(setq default-input-method "japanese-mozc")
+  ;;(define-key global-map [zenkaku-hankaku] 'toggle-input-method)
 
-    (setq x-select-enable-primary t)
-    (setq x-select-enable-clipboard nil)
-    (define-key global-map (kbd "<s-left>") 'elscreen-previous)
-    (define-key global-map (kbd "<s-right>") 'elscreen-next)
+  (setq x-select-enable-primary t)
+  (setq x-select-enable-clipboard nil)
+  (define-key global-map (kbd "<s-left>") 'elscreen-previous)
+  (define-key global-map (kbd "<s-right>") 'elscreen-next)
 
+  ;; ibus.el
+  ;; 本当はこれをやりたいが xrdbを実行すると起動後にフォントサイズが変わってしまう→中止
+  ;; x側からフォrントを変えるか、emacsがわでXIMをOFFにできるかをやる
+  ;; (cd ~/.emacs.d/; wget https://img.atwikiimg.com/www11.atwiki.jp/s-irie/attach/21/95/ibus-el-0.3.2.tar.gz ;tar xf ibus-el-0.3.2.tar.gz ibus-el-0.3.2/ibus.el ibus-el-0.3.2/ibus-el-agent )
+  ;; echo 'Emacs*useXIM: false' >> ~/.Xresources
+  ;; xrdb ~/.Xresources
+  (when (file-exists-p (expand-file-name "~/.emacs.d/ibus-el-0.3.2/ibus.el"))
+    "" ;
+    ;; (require 'ibus)
+    ;; (add-hook 'after-init-hook 'ibus-mode-on)
+    ;; (ibus-define-common-key ?\C-\s nil);; C-SPC は Set Mark に使う
+    ;; (setq ibus-cursor-color '("red" "blue" "limegreen"));; IBusの状態によってカーソル色を変化させる
+    ;; (ibus-define-common-key ?\C-j t);; C-j で半角英数モードをトグルする
+    ;; (setq ibus-prediction-window-position t);; カーソルの位置に予測候補を表示
+    ;; (setq ibus-undo-by-committed-string t);; Undo の時に確定した位置まで戻る
+    ;; (setq ibus-isearch-cursor-type 'hollow);; インクリメンタル検索中のカーソル形状を変更する
     )
-  (when (eq system-type 'windows-nt)  ;windowsだったら
-    ;; http://blog.syati.info/post/make_windows_emacs/ ;windowsの設定はこのURLでOK
-    ;; ショートカットで直接実行するとpathの設定がダメなので
-    ;; これで実行するようにする  "C:\gnupack\startup_emacs.exe"
-    (setq shell-file-name "bash")
-    (setenv "SHELL" shell-file-name)
-    (setq explicit-shell-file-name shell-file-name)
-    )
+
+  ;; ime linuxのみ mozcで入力
+  ;;http://d.hatena.ne.jp/kitokitoki/20120925/p2
+  ;; mozc-toolsを入れる
+  ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
+  ;;https://yo.eki.do/notes/emacs-windows-2017
   )
+
+
+;; font
+;; http://qiita.com/melito/items/238bdf72237290bc6e42
+;; https://qiita.com/segur/items/50ae2697212a7bdb7c7f mac
+;; fc-cache -fv でキャッシュを行う
+;; ずれ確認用
+;; 0123456789012345678901234567890123456789
+;; ｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵｱｲｳｴｵ
+;; あいうえおあいうえおあいうえおあいうえお
+(when (and window-system (or (file-exists-p (expand-file-name "~/.fonts/Ricty-Regular.ttf")) (file-exists-p (expand-file-name "~/Library/Fonts/Ricty-Regular.ttf"))))
+  (let* ((size 12)
+         (asciifont "Ricty")
+         (jpfont "Ricty")
+         (h (* size 10))
+         (fontspec (font-spec :family asciifont))
+         (jp-fontspec (font-spec :family jpfont)))
+    (set-face-attribute 'default nil :family asciifont :height h)
+    (set-fontset-font nil 'japanese-jisx0213.2004-1 jp-fontspec)
+    (set-fontset-font nil 'japanese-jisx0213-2 jp-fontspec)
+    (set-fontset-font nil 'katakana-jisx0201 jp-fontspec)
+    (set-fontset-font nil '(#x0080 . #x024F) fontspec)
+    (set-fontset-font nil '(#x0370 . #x03FF) fontspec)))
+
 (provide 'init)
 
 ;;; init.el ends here

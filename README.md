@@ -41,9 +41,24 @@ tern-modeのショートカットキー
 
 ## ruby支援
 
+- ruby-infを用いた補完支援
+
 `sudo apt-get install pry`等にてpryを入れておく
 
-- M-x inf-ruby, M-x robe-startしないとオムニ補完を開始しない（要修正）
+markdown-modeのショートカットキー
+
+- ruby-inf は背面で実行される
+
+## markdown支援
+
+- jqを用いた補完支援
+
+`sudo apt-get install jq`等にてjqを入れておく
+
+markdown-modeのショートカットキー
+
+- C-c C-x ENTER バッファ内で整形表示
+- C-c C-c p ブラウザで表示
 
 # インストール方法
 
