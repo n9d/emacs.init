@@ -42,16 +42,13 @@ tern-modeのショートカットキー
 ## ruby支援
 
 - ruby-infを用いた補完支援
+- ruby-inf は背面で実行される
 
 `sudo apt-get install pry`等にてpryを入れておく
 
-markdown-modeのショートカットキー
-
-- ruby-inf は背面で実行される
-
 ## markdown支援
 
-- jqを用いた補完支援
+- gfm-mode(GitHub Flavored Markdown)
 
 `sudo apt-get install jq`等にてjqを入れておく
 
