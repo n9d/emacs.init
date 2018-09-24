@@ -49,6 +49,7 @@
 (define-key global-map [f7] 'my-helm-prefix)
 (define-key global-map (kbd "C-;") 'my-helm-prefix) ;; ネイティブwindowの時にしかキーが取れない rloginでは C-;を"\030@c;"に割り当てる
 (define-key my-helm-map (kbd "h") 'helm-mini)
+(define-key my-helm-map (kbd "b") 'helm-mini)
 ;;(define-key my-helm-map (kbd "r") 'helm-recentf) ;; ielmの起動にした(repl)
 (define-key my-helm-map (kbd "i") 'helm-imenu)
 (define-key my-helm-map (kbd "k") 'helm-show-kill-ring)
@@ -158,6 +159,7 @@
 (elscreen-start)
 (define-key elscreen-map (kbd "C-z") 'elscreen-toggle) ; C-zC-zを一つ前のwindowにする
 (define-key my-helm-map (kbd "C-;") 'elscreen-toggle) ; C-;C-;を一つ前のwindowにする
+(define-key my-helm-map (kbd "c") 'elscreen-create)
 (define-key my-helm-map (kbd "C-p") 'elscreen-previous)
 (define-key my-helm-map (kbd "C-n") 'elscreen-next)
 (define-key my-helm-map (kbd "<up>") 'elscreen-previous)
@@ -341,6 +343,7 @@
 
 
 ;; magit
+;; もう一回勉強し直す https://qiita.com/maueki/items/70dbf62d8bd2ee348274
 ;; VC(emacsのversion controlシステム)のままだとコマンド必須になるので入れる
 ;; もしかすると helm-gitにした方がいいかもしれない
 ;; helm-ls-gitでもいいかも
@@ -653,23 +656,37 @@
   (unless (require 'robe nil t) (package-install 'robe))
   (autoload 'robe-mode "robe" "Code navigation, documentation lookup and completion for Ruby" t nil)
   ;;(add-hook 'ruby-mode-hook 'robe-mode)
-  (add-hook 'ruby-mode-hook
-            (lambda ()
-              (let ((buffer (current-buffer)))
-                (delete-other-windows) ;;現時点ではコンパイル等の他のwindowを閉じる
-                (inf-ruby) ;; inf-rubyを背面で立ち上げる方法がわからない。
-                (delete-window (selected-window)) ;; 大体inf-ruby
-                (set-buffer buffer)
-                )
-              (robe-mode)
-              (robe-start)
-              (eval-after-load 'company '(push 'company-robe company-backends))
 
-              ;; F5を押したときに *ruby*バッファを画面分割して ruby-send-region(C-cC-r)を送る
-              ;; フレーム分割覚えてなかった。
+  (require 'cl-extra) ;; めんどくさいのでclきっと入れちゃう
+  (defun set-ruby-buffer-other-window ()
+    (when
+        (let
+            ((s "*ruby*"))
+          (not (cl-some (lambda (w) (string= s (buffer-name (window-buffer w)))) (window-list))))
+      (delete-other-windows)
+      (split-window (selected-window) (* (/ (frame-height) 3) 2))
+      (select-window (next-window))
+      (switch-to-buffer (get-buffer "*ruby*"))
+      (select-window (next-window))
+      t
+      ))
 
-              ))
+  (add-hook
+   'ruby-mode-hook
+   (lambda ()
+     (let ((buffer (current-buffer)))
+       (delete-other-windows) ;;現時点ではコンパイル等の他のwindowを閉じる
+       (inf-ruby) ;; inf-rubyを背面で立ち上げる方法がわからない。
+       (delete-window (selected-window)) ;; 大体inf-ruby
+       (set-buffer buffer))
+     (robe-mode)
+     (robe-start)
+     (eval-after-load 'company '(push 'company-robe company-backends))
 
+     ;; F5を押したときに *ruby*バッファを画面分割して ruby-send-region(C-cC-r)を送る
+     ;; フレーム分割覚えてなかった。
+
+     ))
   )
 
 
@@ -983,7 +1000,8 @@
   ;;(define-key global-map [zenkaku-hankaku] 'toggle-input-method)
 
   (setq x-select-enable-primary t)
-  (setq x-select-enable-clipboard nil)
+  ;;(setq x-select-enable-clipboard nil)
+  (setq x-select-enable-clipboard t)
   (define-key global-map (kbd "<s-left>") 'elscreen-previous)
   (define-key global-map (kbd "<s-right>") 'elscreen-next)
 
