@@ -49,6 +49,7 @@
 (define-key global-map [f7] 'my-helm-prefix)
 (define-key global-map (kbd "C-;") 'my-helm-prefix) ;; ネイティブwindowの時にしかキーが取れない rloginでは C-;を"\030@c;"に割り当てる
 (define-key my-helm-map (kbd "h") 'helm-mini)
+(define-key my-helm-map (kbd "b") 'helm-mini)
 ;;(define-key my-helm-map (kbd "r") 'helm-recentf) ;; ielmの起動にした(repl)
 (define-key my-helm-map (kbd "i") 'helm-imenu)
 (define-key my-helm-map (kbd "k") 'helm-show-kill-ring)
@@ -158,6 +159,7 @@
 (elscreen-start)
 (define-key elscreen-map (kbd "C-z") 'elscreen-toggle) ; C-zC-zを一つ前のwindowにする
 (define-key my-helm-map (kbd "C-;") 'elscreen-toggle) ; C-;C-;を一つ前のwindowにする
+(define-key my-helm-map (kbd "c") 'elscreen-create)
 (define-key my-helm-map (kbd "C-p") 'elscreen-previous)
 (define-key my-helm-map (kbd "C-n") 'elscreen-next)
 (define-key my-helm-map (kbd "<up>") 'elscreen-previous)
@@ -341,6 +343,7 @@
 
 
 ;; magit
+;; もう一回勉強し直す https://qiita.com/maueki/items/70dbf62d8bd2ee348274
 ;; VC(emacsのversion controlシステム)のままだとコマンド必須になるので入れる
 ;; もしかすると helm-gitにした方がいいかもしれない
 ;; helm-ls-gitでもいいかも
@@ -405,36 +408,6 @@
 (set-face-background 'whitespace-space "red")
 (set-face-underline  'whitespace-space t)
 
-
-;;; smart-compile
-;;; http://th.nao.ac.jp/MEMBER/zenitani/elisp-j.html#smart-compile
-(unless (require 'smart-compile nil t) (package-install 'smart-compile))
-;;;(global-set-key (kbd "C-c C-c") 'smart-compile)
-;;(setq compile-command "node ")
-(dolist
-    (hook '(c-mode-hook js-mode-hook ruby-mode-hook python-mode-hook))  ;;smartcompileを実行するmode-hookを登録していく
-  (add-hook hook
-            (lambda ()
-              (local-set-key (kbd "C-c c") 'smart-compile)
-              (local-set-key [f5] (kbd "C-x C-s C-c c C-m"))
-              (local-set-key [f6] 'next-error)
-              (local-set-key (kbd "C-c @") 'next-error)
-              ;;(setq compilation-window-height 15)
-              (setq compilation-window-height (/ (frame-height) 3)) ;; デフォルトは画面の下半分→1/3
-              (setq compilation-scroll-output t) ;;コンパイル時スクロールon
-              )))
-
-;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
-(when (boundp 'smart-compile-alist)
-  (setq smart-compile-alist
-        (append smart-compile-alist
-                '(("\\.c\\'" . "gcc %f")
-                  ("\\.rb\\'" . "ruby %f")
-                  ("\\.py\\'" . "python %f")
-                  ("\\.js\\'" . "node %f")
-                  )))
-  (if (file-exists-p (expand-file-name "~/sptv"))  (add-to-list 'smart-compile-alist `(,(expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
-  )
 
 
 ;;;プログラム記述系の共通設定
@@ -653,23 +626,46 @@
   (unless (require 'robe nil t) (package-install 'robe))
   (autoload 'robe-mode "robe" "Code navigation, documentation lookup and completion for Ruby" t nil)
   ;;(add-hook 'ruby-mode-hook 'robe-mode)
-  (add-hook 'ruby-mode-hook
-            (lambda ()
-              (let ((buffer (current-buffer)))
-                (delete-other-windows) ;;現時点ではコンパイル等の他のwindowを閉じる
-                (inf-ruby) ;; inf-rubyを背面で立ち上げる方法がわからない。
-                (delete-window (selected-window)) ;; 大体inf-ruby
-                (set-buffer buffer)
-                )
-              (robe-mode)
-              (robe-start)
-              (eval-after-load 'company '(push 'company-robe company-backends))
 
-              ;; F5を押したときに *ruby*バッファを画面分割して ruby-send-region(C-cC-r)を送る
-              ;; フレーム分割覚えてなかった。
+  (require 'cl-extra) ;; めんどくさいのでclきっと入れちゃう
+  (defun myRubyMode-set-ruby-buffer-other-window ()
+    (when
+        (let
+            ((s "*ruby*"))
+          (not (cl-some (lambda (w) (string= s (buffer-name (window-buffer w)))) (window-list))))
+      (delete-other-windows)
+      (split-window (selected-window) (* (/ (frame-height) 3) 2))
+      (select-window (next-window))
+      (switch-to-buffer (get-buffer "*ruby*"))
+      (select-window (next-window))
+      t
+      ))
 
-              ))
+  (defun myRubyMode-send-buffer () ;; 画面分割して現在のバッファを実行する
+    "Send current buffer to *ruby*"
+    (interactive)
+    (progn
+      (myRubyMode-set-ruby-buffer-other-window)
+      (ruby-send-buffer-and-go) ;; *ruby*バッファに移動して 末尾に移動する（オートスクロールの方法がわからない）
+      (goto-char (point-max))
+      (select-window (next-window)) ;;もとに戻る
+      ))
 
+  (add-hook
+   'ruby-mode-hook
+   (lambda ()
+     (let ((curbuf (current-buffer)))
+       (inf-ruby)
+       (dolist (window (window-list)) (if (string= "*ruby*" (buffer-name (window-buffer window))) (delete-window window))) ;; rubyバッファを消す
+       (set-buffer curbuf))
+     (robe-mode)
+     (robe-start)
+     ;;(eval-after-load 'company '(push 'company-robe company-backends))
+     (add-to-list (make-local-variable 'company-backends) '(company-robe :with company-dabbrev-code)) ;;バッファ上の他の単語も候補にする これちゃんと動いてるか不明
+
+     (local-set-key [f5] 'myRubyMode-send-buffer)
+
+     ))
   )
 
 
@@ -730,6 +726,39 @@
           #'(lambda () (define-key eshell-mode-map (kbd "M-p") 'helm-eshell-history))) ;; helm で履歴から入力
 (add-hook 'eshell-mode-hook
           #'(lambda () (define-key eshell-mode-map (kbd "M-n") 'helm-esh-pcomplete))) ;; helm で補完
+
+
+;;; smart-compile
+;;; http://th.nao.ac.jp/MEMBER/zenitani/elisp-j.html#smart-compile
+(unless (require 'smart-compile nil t) (package-install 'smart-compile))
+;;;(global-set-key (kbd "C-c C-c") 'smart-compile)
+;;(setq compile-command "node ")
+(dolist
+    (hook '(c-mode-hook js-mode-hook ruby-mode-hook python-mode-hook))  ;;smartcompileを実行するmode-hookを登録していく
+    ;; ruby-modeは*ruby*バッファがいるときにはずす構成にすること（まだやってない）
+    ;;(hook '(c-mode-hook js-mode-hook python-mode-hook))  ;;smartcompileを実行するmode-hookを登録していく
+  (add-hook hook
+            (lambda ()
+              (local-set-key (kbd "C-c c") 'smart-compile)
+              (local-set-key [f5] (kbd "C-x C-s C-c c C-m"))
+              (local-set-key [f6] 'next-error)
+              (local-set-key (kbd "C-c @") 'next-error)
+              ;;(setq compilation-window-height 15)
+              (setq compilation-window-height (/ (frame-height) 3)) ;; デフォルトは画面の下半分→1/3
+              (setq compilation-scroll-output t) ;;コンパイル時スクロールon
+              )))
+
+;;ディレクトリごとにコンパイルコマンド変えるときここをいじる
+(when (boundp 'smart-compile-alist)
+  (setq smart-compile-alist
+        (append smart-compile-alist
+                '(("\\.c\\'" . "gcc %f")
+                  ("\\.rb\\'" . "ruby %f")
+                  ("\\.py\\'" . "python %f")
+                  ("\\.js\\'" . "node %f")
+                  )))
+  (if (file-exists-p (expand-file-name "~/sptv"))  (add-to-list 'smart-compile-alist `(,(expand-file-name "~/sptv/.*") . "cd ~/sptv/sptv_base;make func")))
+  )
 
 
 ;;; ansi-term
@@ -983,7 +1012,8 @@
   ;;(define-key global-map [zenkaku-hankaku] 'toggle-input-method)
 
   (setq x-select-enable-primary t)
-  (setq x-select-enable-clipboard nil)
+  ;;(setq x-select-enable-clipboard nil)
+  (setq x-select-enable-clipboard t)
   (define-key global-map (kbd "<s-left>") 'elscreen-previous)
   (define-key global-map (kbd "<s-right>") 'elscreen-next)
 
