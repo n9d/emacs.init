@@ -70,6 +70,11 @@
 (unless (require 'helm-descbinds nil t) (package-install 'helm-descbinds))
 (helm-descbinds-mode)
 
+;;; yasnippet
+(unless (require 'yasnippet nil t) (package-install 'yasnippet))
+(yas-global-mode 1)
+
+
 ;;; silver-seacher(ag)
 ;;; agが入っていればhelm-agを使う
 ;;; 起点ディレクトリを変えたいときにはC-uC-xg
@@ -348,15 +353,15 @@
 ;; もしかすると helm-gitにした方がいいかもしれない
 ;; helm-ls-gitでもいいかも
 ;; projectile,helm-projectileとの関係上 magitはやめたほうがいいかも
-;; (unless (require 'magit nil t) (package-install 'magit))
-;; ;;;(unless (require 'magit-popup nil t) (package-install 'magit-popup))
-;; (global-set-key (kbd "C-x m") 'magit-status)
-;; ;;;ファイルが巨大だとgit brameがきれいに動かない VCのC-xvgは秀逸！
-;; (defadvice vc-git-annotate-command (around vc-git-annotate-command activate)
-;;   "suppress relative path of file from git blame output"
-;;   (let ((name (file-relative-name file)))
-;;     (vc-git-command buf 'async nil "blame" "--date=iso" rev "--" name)))
-;; ;;(add-hook 'magit-mode-hook 'magit-svn-mode)
+(unless (require 'magit nil t) (package-install 'magit))
+;;(unless (require 'magit-popup nil t) (package-install 'magit-popup))
+(global-set-key (kbd "C-x m") 'magit-status)
+ ;;;ファイルが巨大だとgit brameがきれいに動かない VCのC-xvgは秀逸！
+ (defadvice vc-git-annotate-command (around vc-git-annotate-command activate)
+   "suppress relative path of file from git blame output"
+   (let ((name (file-relative-name file)))
+     (vc-git-command buf 'async nil "blame" "--date=iso" rev "--" name)))
+;;(add-hook 'magit-mode-hook 'magit-svn-mode)
 ;; (define-key vc-prefix-map (kbd "l") 'magit-log-buffer-file-popup)
 
 
