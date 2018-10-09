@@ -71,8 +71,12 @@
 (helm-descbinds-mode)
 
 ;;; yasnippet
+;; 原則メニューを見れば片付く
+;; http://vdeep.net/emacs-yasnippet をみてもう少しいじる
 (unless (require 'yasnippet nil t) (package-install 'yasnippet))
+(unless (require 'yasnippet-snippets nil t) (package-install 'yasnippet-snippets))
 (yas-global-mode 1)
+
 
 
 ;;; silver-seacher(ag)
@@ -349,6 +353,7 @@
 
 ;; magit
 ;; もう一回勉強し直す https://qiita.com/maueki/items/70dbf62d8bd2ee348274
+;; https://qiita.com/egg_chicken/items/948f8df70069334e8296
 ;; VC(emacsのversion controlシステム)のままだとコマンド必須になるので入れる
 ;; もしかすると helm-gitにした方がいいかもしれない
 ;; helm-ls-gitでもいいかも
@@ -356,13 +361,15 @@
 (unless (require 'magit nil t) (package-install 'magit))
 ;;(unless (require 'magit-popup nil t) (package-install 'magit-popup))
 (global-set-key (kbd "C-x m") 'magit-status)
+(define-key my-helm-map (kbd "m") 'magit-status)
  ;;;ファイルが巨大だとgit brameがきれいに動かない VCのC-xvgは秀逸！
- (defadvice vc-git-annotate-command (around vc-git-annotate-command activate)
-   "suppress relative path of file from git blame output"
-   (let ((name (file-relative-name file)))
-     (vc-git-command buf 'async nil "blame" "--date=iso" rev "--" name)))
+(defadvice vc-git-annotate-command (around vc-git-annotate-command activate)
+  "Suppress relative path of file from git blame output."
+  (let ((name (file-relative-name file)))
+    (vc-git-command buf 'async nil "blame" "--date=iso" rev "--" name)))
 ;;(add-hook 'magit-mode-hook 'magit-svn-mode)
 ;; (define-key vc-prefix-map (kbd "l") 'magit-log-buffer-file-popup)
+
 
 
 ;;; ediff
