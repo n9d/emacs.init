@@ -169,7 +169,7 @@
 (define-key company-active-map (kbd "C-h") nil)
 (global-set-key (kbd "C-M-i") 'company-complete)
 ;(define-key company-active-map [tab] 'company-complete-selection) ;; TABで候補を設定
-(define-key company-active-map [tab] 'company-complete-common2)
+;(define-key company-active-map [tab] 'company-complete-common2)
 (define-key company-active-map (kbd "C-h") nil) ;; C-hはバックスペース割当のため無効化
 (define-key company-active-map (kbd "C-S-h") 'company-show-doc-buffer) ;; ドキュメント表示はC-Shift-h
 (define-key company-active-map [backtab] 'company-select-previous) ; おまけ
