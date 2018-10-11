@@ -70,6 +70,16 @@
 (unless (require 'helm-descbinds nil t) (package-install 'helm-descbinds))
 (helm-descbinds-mode)
 
+
+
+;; multiple-cursor
+(unless (require 'multiple-cursors nil t) (package-install 'multiple-cursors))
+(global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+(global-set-key (kbd "C->") 'mc/mark-next-like-this)
+(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
+
+
 ;;; silver-seacher(ag)
 ;;; agが入っていればhelm-agを使う
 ;;; 起点ディレクトリを変えたいときにはC-uC-xg
@@ -117,11 +127,9 @@
 (setq company-idle-delay 0) ; デフォルトは0.5
 (setq company-minimum-prefix-length 2) ; デフォルトは4
 (setq company-selection-wrap-around t) ; 候補の一番下でさらに下に行こうとすると一番上に戻る
-(define-key company-active-map (kbd "M-n") nil)
-(define-key company-active-map (kbd "M-p") nil)
-(define-key company-active-map (kbd "C-n") 'company-select-next)
-(define-key company-active-map (kbd "C-p") 'company-select-previous)
-(define-key company-active-map (kbd "C-h") nil)
+(setq completion-ignore-case t)
+(setq company-dabbrev-downcase nil)
+
 (defun company--insert-candidate2 (candidate)
   "Match company-mode behavior to autocomplete.CANDIDATE."
   (when (> (length candidate) 0)
@@ -129,7 +137,18 @@
     (if (eq (company-call-backend 'ignore-case) 'keep-prefix)
         (insert (company-strip-prefix candidate))
       (if (equal company-prefix candidate)
-          (company-select-next)
+          (company-select-next) ;; タブを押したら次候補
+        (delete-region (- (point) (length company-prefix)) (point))
+        (insert candidate))
+      )))
+(defun company--insert-candidate3 (candidate)
+  "Match company-mode behavior to autocomplete.CANDIDATE."
+  (when (> (length candidate) 0)
+    (setq candidate (substring-no-properties candidate))
+    (if (eq (company-call-backend 'ignore-case) 'keep-prefix)
+        (insert (company-strip-prefix candidate))
+      (if (equal company-prefix candidate)
+          (company-complete-selection) ;; タブを押したら確定にしたかった
         (delete-region (- (point) (length company-prefix)) (point))
         (insert candidate))
       )))
@@ -140,8 +159,19 @@
     (if (and (not (cdr company-candidates))
              (equal company-common (car company-candidates)))
         (company-complete-selection)
-      (company--insert-candidate2 company-common))))
-(define-key company-active-map [tab] 'company-complete-common2)
+      (company--insert-candidate3 company-common))))
+     ;; (company--insert-candidate2 company-common))))
+
+(define-key company-active-map (kbd "M-n") nil)
+(define-key company-active-map (kbd "M-p") nil)
+(define-key company-active-map (kbd "C-n") 'company-select-next)
+(define-key company-active-map (kbd "C-p") 'company-select-previous)
+(define-key company-active-map (kbd "C-h") nil)
+(global-set-key (kbd "C-M-i") 'company-complete)
+;(define-key company-active-map [tab] 'company-complete-selection) ;; TABで候補を設定
+;(define-key company-active-map [tab] 'company-complete-common2)
+(define-key company-active-map (kbd "C-h") nil) ;; C-hはバックスペース割当のため無効化
+(define-key company-active-map (kbd "C-S-h") 'company-show-doc-buffer) ;; ドキュメント表示はC-Shift-h
 (define-key company-active-map [backtab] 'company-select-previous) ; おまけ
 
 ;;色（デフォルトはどぎつい)
@@ -150,6 +180,37 @@
 (set-face-attribute 'company-scrollbar-fg nil :background "steelblue")
 (set-face-attribute 'company-tooltip nil :background "lightgrey" :foreground "black")
 (set-face-attribute 'company-tooltip-selection  nil :background "light steel blue")
+
+;; company-quickhelp
+(unless (require 'company-quickhelp nil  t) (package-install 'company-quickhelp))
+(when window-system
+  (company-quickhelp-mode +1))
+(eval-after-load 'company
+  '(define-key company-active-map (kbd "C-c h") #'company-quickhelp-manual-begin))
+
+
+;;; yasnippet
+;; 原則メニューを見れば片付く
+;; http://vdeep.net/emacs-yasnippet をみてもう少しいじる
+(unless (require 'yasnippet nil t) (package-install 'yasnippet))
+(unless (require 'yasnippet-snippets nil t) (package-install 'yasnippet-snippets))
+(yas-global-mode 1);;; バックアップファイルを~/.emacs.d/backupへ
+(unless (file-exists-p (expand-file-name "~/.emacs.d/mySnippets")) (make-directory (expand-file-name "~/.emacs.d/mySnippets")))
+(add-to-list 'yas-snippet-dirs (expand-file-name "~/.emacs.d/mySnippets/"))
+;; Add yasnippet support for all company backends
+;; https://github.com/syl20bnr/spacemacs/pull/179
+(defvar company-mode/enable-yas t
+  "Enable yasnippet for all backends.")
+(defun company-mode/backend-with-yas (backend)
+  (if (or (not company-mode/enable-yas) (and (listp backend) (member 'company-yasnippet backend)))
+      backend
+    (append (if (consp backend) backend (list backend))
+            '(:with company-yasnippet))))
+(setq company-backends (mapcar #'company-mode/backend-with-yas company-backends))
+
+
+;; pos-tip
+(unless (require 'pos-tip nil t) (package-install 'pos-tip))
 
 
 ;;; elscreen  emacs版screen キーバインドが気に入らない
@@ -344,20 +405,23 @@
 
 ;; magit
 ;; もう一回勉強し直す https://qiita.com/maueki/items/70dbf62d8bd2ee348274
+;; https://qiita.com/egg_chicken/items/948f8df70069334e8296
 ;; VC(emacsのversion controlシステム)のままだとコマンド必須になるので入れる
 ;; もしかすると helm-gitにした方がいいかもしれない
 ;; helm-ls-gitでもいいかも
 ;; projectile,helm-projectileとの関係上 magitはやめたほうがいいかも
-;; (unless (require 'magit nil t) (package-install 'magit))
-;; ;;;(unless (require 'magit-popup nil t) (package-install 'magit-popup))
-;; (global-set-key (kbd "C-x m") 'magit-status)
-;; ;;;ファイルが巨大だとgit brameがきれいに動かない VCのC-xvgは秀逸！
-;; (defadvice vc-git-annotate-command (around vc-git-annotate-command activate)
-;;   "suppress relative path of file from git blame output"
-;;   (let ((name (file-relative-name file)))
-;;     (vc-git-command buf 'async nil "blame" "--date=iso" rev "--" name)))
-;; ;;(add-hook 'magit-mode-hook 'magit-svn-mode)
+(unless (require 'magit nil t) (package-install 'magit))
+;;(unless (require 'magit-popup nil t) (package-install 'magit-popup))
+(global-set-key (kbd "C-x m") 'magit-status)
+(define-key my-helm-map (kbd "m") 'magit-status)
+ ;;;ファイルが巨大だとgit brameがきれいに動かない VCのC-xvgは秀逸！
+(defadvice vc-git-annotate-command (around vc-git-annotate-command activate)
+  "Suppress relative path of file from git blame output."
+  (let ((name (file-relative-name file)))
+    (vc-git-command buf 'async nil "blame" "--date=iso" rev "--" name)))
+;;(add-hook 'magit-mode-hook 'magit-svn-mode)
 ;; (define-key vc-prefix-map (kbd "l") 'magit-log-buffer-file-popup)
+
 
 
 ;;; ediff
@@ -419,7 +483,7 @@
 ;;; flycheck
 (unless (require 'flycheck nil t) (package-install 'flycheck))
 (add-hook 'after-init-hook #'global-flycheck-mode)
-
+(unless (require 'flycheck-pos-tip nil t) (package-install 'flycheck-pos-tip)) ;; pos-tipでエラーを表示
 
 ;; C-mode
 ;;;https://qiita.com/sune2/items/c040171a0e377e1400f6 でc/c++の補完ができる
@@ -461,7 +525,8 @@
               (lambda ()
                 (tern-mode t)
                 ;;(add-to-list (make-local-variable 'company-backends) 'company-tern) ;; ternのみが補完候補
-                (add-to-list (make-local-variable 'company-backends) '(company-tern :with company-dabbrev-code)) ;;バッファ上の他の単語も候補にする
+                ;;(add-to-list (make-local-variable 'company-backends) '(company-tern :with company-dabbrev-code)) ;;バッファ上の他の単語も候補にする
+                (add-to-list (make-local-variable 'company-backends) '(company-tern :with company-dabbrev-code company-yasnippet)) ;;バッファ上の他の単語も候補にする
                 ;; project(git)内の関数とかも補完候補にしたい
                 ))
     )
@@ -661,7 +726,7 @@
      (robe-mode)
      (robe-start)
      ;;(eval-after-load 'company '(push 'company-robe company-backends))
-     (add-to-list (make-local-variable 'company-backends) '(company-robe :with company-dabbrev-code)) ;;バッファ上の他の単語も候補にする これちゃんと動いてるか不明
+     (add-to-list (make-local-variable 'company-backends) '(company-robe :with company-dabbrev-code company-yasnippet)) ;;バッファ上の他の単語も候補にする これちゃんと動いてるか不明
 
      (local-set-key [f5] 'myRubyMode-send-buffer)
 
