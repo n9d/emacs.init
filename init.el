@@ -415,13 +415,14 @@
 (global-set-key (kbd "C-x m") 'magit-status)
 (define-key my-helm-map (kbd "m") 'magit-status)
  ;;;ファイルが巨大だとgit brameがきれいに動かない VCのC-xvgは秀逸！
+;; vc-annotate
+;; https://blog.kyanny.me/entry/2014/08/16/022311
 (defadvice vc-git-annotate-command (around vc-git-annotate-command activate)
   "Suppress relative path of file from git blame output."
   (let ((name (file-relative-name file)))
     (vc-git-command buf 'async nil "blame" "--date=iso" rev "--" name)))
 ;;(add-hook 'magit-mode-hook 'magit-svn-mode)
 ;; (define-key vc-prefix-map (kbd "l") 'magit-log-buffer-file-popup)
-
 
 
 ;;; ediff
