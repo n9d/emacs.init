@@ -288,20 +288,32 @@
   (progn
     (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t)
     (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
+
     (when (eq system-type 'darwin) ;; macのときだけorgの段落キーバインドを変える
       (define-key org-mode-map (kbd "M-{") 'elscreen-previous)
       (define-key org-mode-map (kbd "M-}") 'elscreen-next))
     ))
 
 (add-hook 'org-mode-hook #'my-org-mode-hook)
-;;(require ‘org-babel-init)
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
 (setq org-log-done 'time);; DONEの時刻を記録
-;; メモ書きに大変便利、結果は#+begin_src ruby :exports resultsで出力
-                                        ;(org-babel-do-load-languages ;
-                                        ; 'org-babel-load-languages
-                                        ; '((dot .t) (ditaa .t) (gnuplot .t) (emacs-lisp .t)
-                                        ;   (ruby .t) (sh .t) )) ;;デフォルトはemacslispのみ
+
+;;http://misohena.jp/blog/2017-10-26-how-to-use-code-block-of-emacs-org-mode.html
+;; メモ書きに大変便利、結果は#+begin_src ruby で結果はC-cC-c出力
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ (mapcar (lambda (lang) (cons lang t))
+         `(ditaa
+           dot
+           ;octave
+           ;perl
+           python
+           ruby
+           js
+           ;,(if (locate-library "ob-shell") 'shell 'sh)
+           sqlite
+           )))
+
 ;; ditaaの設定
 ;; #+begin_src ditaa :file images/ditaa-test.png :cmdline -s 2 日本語を通したいときには左記のヘッダにする
 ;; http://d.hatena.ne.jp/tamura70/20100317/org を参照のこと
