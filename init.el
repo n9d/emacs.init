@@ -289,6 +289,11 @@
     (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t)
     (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
 
+    ;; babel の出力の調整
+    (setf (alist-get :exports org-babel-default-header-args) "both") ;; githubではbothにしておかないと表示しない
+    (setf (alist-get :results org-babel-default-header-args:python) "output") ;; pythonはデフォoutputのほうが使いやすい
+    (setf (alist-get :results org-babel-default-header-args:js) "output") ;; jsも
+
     (when (eq system-type 'darwin) ;; macのときだけorgの段落キーバインドを変える
       (define-key org-mode-map (kbd "M-{") 'elscreen-previous)
       (define-key org-mode-map (kbd "M-}") 'elscreen-next))
@@ -298,6 +303,16 @@
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
 (setq org-log-done 'time);; DONEの時刻を記録
 
+(eval-after-load 'org
+                '(progn
+                   ;; org template expansion に 加える githubのorg-modeが :exports bothにしないと出力しない
+                   (add-to-list 'org-structure-template-alist '("J" "#+BEGIN_SRC js :exports both\n?\n#+END_SRC"))
+                   (add-to-list 'org-structure-template-alist '("R" "#+BEGIN_SRC ruby :exports both\n?\n#+END_SRC"))
+                   (add-to-list 'org-structure-template-alist '("P" "#+BEGIN_SRC python :exports both\n?\n#+END_SRC"))
+                   (add-to-list 'org-structure-template-alist '("S" "#+BEGIN_SRC shell :exports both\n?\n#+END_SRC"))
+                   ))
+
+
 ;;http://misohena.jp/blog/2017-10-26-how-to-use-code-block-of-emacs-org-mode.html
 ;; メモ書きに大変便利、結果は#+begin_src ruby で結果はC-cC-c出力
 (org-babel-do-load-languages
@@ -306,11 +321,11 @@
          `(ditaa
            dot
            ;octave
-           ;perl
+           perl
            python
            ruby
            js
-           ;,(if (locate-library "ob-shell") 'shell 'sh)
+           ,(if (locate-library "ob-shell") 'shell 'sh)
            sqlite
            )))
 
@@ -1015,11 +1030,12 @@
 ;; (helm-migemo-mode 1) ;; occurでmigemoが使える
 
 
-;;; やること
+;;; やること TODO
 ;;; http://sheephead.homelinux.org/2011/12/19/6930/
 ;;; https://github.com/magnars/multiple-cursors.el マルチ編集
 ;;; https://github.com/chikatoike/SublimeTextWiki/wiki/SublimeText-Vim-Emacs-%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E6%AF%94%E8%BC%83%E8%A1%A8 ここを参考に最強を目指すのだ
-
+;; http://blog.lambda-consulting.jp/2015/11/20/article/ これいいかも。init.elをorgで管理
+;; http://d.hatena.ne.jp/rubikitch/20090219/sequential_command 一つのコマンドに複数の意味をもたせる C-a = beginning line buffer 元の位置
 
 ;;; 環境依存系の設定
 ;;; windowsのキーバインドをemacs化するには keyhacが使える
