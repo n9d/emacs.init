@@ -278,6 +278,10 @@
 
 
 
+;;; htmlize orgから出力するのに必要
+(unless (require 'htmlize nil t ) (package-install 'htmlize))
+
+
 ;;; org-mode
 ;;; 最新のorgmodeでditaaが動かないので ubuntu16.04付属のorgを使う
 ;;; 埋め込みは http://tanehp.ec-net.jp/heppoko-lab/prog/resource/org_mode/org_mode_memo.html が参考になる
@@ -298,6 +302,19 @@
       (define-key org-mode-map (kbd "M-{") 'elscreen-previous)
       (define-key org-mode-map (kbd "M-}") 'elscreen-next))
     ))
+
+(define-key my-helm-map (kbd "a") 'org-agenda)
+(define-key my-helm-map (kbd "c") 'org-capture)
+
+;;https://skalldan.wordpress.com/2011/07/16/%E8%89%B2%E3%80%85-org-capture-%E3%81%99%E3%82%8B-2/ これが参考になる？
+
+(unless (file-exists-p (expand-file-name "~/org")) (make-directory (expand-file-name "~/org"))) ;ホームにorgがなかったら作る
+(setq org-capture-templates
+      '(("t" "Todo" entry (file+headline "~/org/gtd.org" "Tasks")
+     "* TODO %?\n  %i\n  %a")
+        ("j" "Journal" entry (file+datetree "~/org/journal.org")
+     "* %?\nEntered on %U\n  %i\n  %a")))
+
 
 (add-hook 'org-mode-hook #'my-org-mode-hook)
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
