@@ -278,10 +278,6 @@
 
 
 
-;;; htmlize orgから出力するのに必要
-(unless (require 'htmlize nil t ) (package-install 'htmlize))
-
-
 ;;; org-mode
 ;;; 最新のorgmodeでditaaが動かないので ubuntu16.04付属のorgを使う
 ;;; 埋め込みは http://tanehp.ec-net.jp/heppoko-lab/prog/resource/org_mode/org_mode_memo.html が参考になる
@@ -352,6 +348,14 @@
 ;;(setq org-ditaa-jar-path (expand-file-name "~/bin/jditaa.jar")) ;; ditaaのパス
 (setq org-ditaa-jar-path (expand-file-name "~/bin/ditaa0_9.jar")) ;; ditaaのパス
 (setq org-confirm-babel-evaluate nil) ;; コードを評価するとき尋ねない ditaa作成時の問い合わせをoff
+
+;;; org-mode のエクスポーター
+;;; htmlize orgから出力するのに必要
+(unless (require 'htmlize nil t ) (package-install 'htmlize))
+;;; ox-qmd qiita用
+(unless (require 'ox-qmd nil t ) (package-install 'ox-qmd))
+
+
 
 ;;;
 ;;; 拡張したpictureモードC-矢印で線がかける
