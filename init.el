@@ -299,6 +299,19 @@
       (define-key org-mode-map (kbd "M-}") 'elscreen-next))
     ))
 
+(define-key my-helm-map (kbd "a") 'org-agenda)
+(define-key my-helm-map (kbd "c") 'org-capture)
+
+;;https://skalldan.wordpress.com/2011/07/16/%E8%89%B2%E3%80%85-org-capture-%E3%81%99%E3%82%8B-2/ これが参考になる？
+
+(unless (file-exists-p (expand-file-name "~/org")) (make-directory (expand-file-name "~/org"))) ;ホームにorgがなかったら作る
+(setq org-capture-templates
+      '(("t" "Todo" entry (file+headline "~/org/gtd.org" "Tasks")
+     "* TODO %?\n  %i\n  %a")
+        ("j" "Journal" entry (file+datetree "~/org/journal.org")
+     "* %?\nEntered on %U\n  %i\n  %a")))
+
+
 (add-hook 'org-mode-hook #'my-org-mode-hook)
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
 (setq org-log-done 'time);; DONEの時刻を記録
@@ -335,6 +348,14 @@
 ;;(setq org-ditaa-jar-path (expand-file-name "~/bin/jditaa.jar")) ;; ditaaのパス
 (setq org-ditaa-jar-path (expand-file-name "~/bin/ditaa0_9.jar")) ;; ditaaのパス
 (setq org-confirm-babel-evaluate nil) ;; コードを評価するとき尋ねない ditaa作成時の問い合わせをoff
+
+;;; org-mode のエクスポーター
+;;; htmlize orgから出力するのに必要
+(unless (require 'htmlize nil t ) (package-install 'htmlize))
+;;; ox-qmd qiita用
+(unless (require 'ox-qmd nil t ) (package-install 'ox-qmd))
+
+
 
 ;;;
 ;;; 拡張したpictureモードC-矢印で線がかける
