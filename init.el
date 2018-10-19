@@ -1119,6 +1119,10 @@
     (mac-auto-ascii-mode 1) ;; ime入力中にC-xoで「お」が表示されないようにする（ただしIMEはoffになる）
     (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
     (setq mac-option-modifier 'super) ;; option を superへ
+    ;; when using Windows keyboard on Mac, the insert key is mapped to <help>
+    (global-set-key [C-help] #'clipboard-kill-ring-save)
+    (global-set-key [S-help] #'clipboard-yank)
+    (global-set-key [help] #'overwrite-mode) ;; insert to toggle `overwrite-mode'
     (define-key global-map (kbd "s-¥") [?\\]) ;; 一応 optionでもでるように
     (define-key global-map (kbd "<s-left>") 'elscreen-previous)
     (define-key global-map (kbd "<s-right>") 'elscreen-next)
