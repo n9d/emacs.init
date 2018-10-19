@@ -72,6 +72,10 @@
 
 
 
+;; which-key(キーメニュー helm-descbindsと機能ダブってるよな・・・
+(unless (require 'which-key nil t) (package-install 'which-key))
+(which-key-mode)
+
 ;; multiple-cursor
 (unless (require 'multiple-cursors nil t) (package-install 'multiple-cursors))
 (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
@@ -302,6 +306,9 @@
 (define-key my-helm-map (kbd "a") 'org-agenda)
 (define-key my-helm-map (kbd "c") 'org-capture)
 
+;;(setq org-startup-with-inline-images t) ;;インライン画像を表示 C-cC-xC-vでトグルするので不要
+;; http://lioon.net/org-mode-view-style をもう少し研究する
+
 ;;https://skalldan.wordpress.com/2011/07/16/%E8%89%B2%E3%80%85-org-capture-%E3%81%99%E3%82%8B-2/ これが参考になる？
 
 (unless (file-exists-p (expand-file-name "~/org")) (make-directory (expand-file-name "~/org"))) ;ホームにorgがなかったら作る
@@ -315,6 +322,7 @@
 (add-hook 'org-mode-hook #'my-org-mode-hook)
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
 (setq org-log-done 'time);; DONEの時刻を記録
+
 
 (eval-after-load 'org
                 '(progn
@@ -355,6 +363,9 @@
 ;;; ox-qmd qiita用
 (unless (require 'ox-qmd nil t ) (package-install 'ox-qmd))
 
+
+;; ドラッグ＆ドロップで画像をorgに貼り付ける
+(unless (require 'org-download nil t) (package-install 'org-download))
 
 
 ;;;
@@ -913,7 +924,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (markdown-mode+ mozc inf-ruby helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
+    (powerline markdown-mode+ mozc inf-ruby helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -1108,6 +1119,10 @@
     (mac-auto-ascii-mode 1) ;; ime入力中にC-xoで「お」が表示されないようにする（ただしIMEはoffになる）
     (define-key global-map [?¥] [?\\]) ;; macのemacsではバックスラッシュのキーで円が入る
     (setq mac-option-modifier 'super) ;; option を superへ
+    ;; when using Windows keyboard on Mac, the insert key is mapped to <help>
+    (global-set-key [C-help] #'clipboard-kill-ring-save)
+    (global-set-key [S-help] #'clipboard-yank)
+    (global-set-key [help] #'overwrite-mode) ;; insert to toggle `overwrite-mode'
     (define-key global-map (kbd "s-¥") [?\\]) ;; 一応 optionでもでるように
     (define-key global-map (kbd "<s-left>") 'elscreen-previous)
     (define-key global-map (kbd "<s-right>") 'elscreen-next)
@@ -1155,6 +1170,12 @@
   ;; mozc-toolsを入れる
   ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
   ;;https://yo.eki.do/notes/emacs-windows-2017
+  )
+
+;; mode-line (powerline)
+(when window-system
+  (unless (require 'powerline nil t) (package-install 'power-line))
+  (powerline-default-theme) ;;とりあえずデフォルト
   )
 
 
