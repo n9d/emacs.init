@@ -70,11 +70,24 @@
 (unless (require 'helm-descbinds nil t) (package-install 'helm-descbinds))
 (helm-descbinds-mode)
 
-
-
 ;; which-key(キーメニュー helm-descbindsと機能ダブってるよな・・・
 (unless (require 'which-key nil t) (package-install 'which-key))
 (which-key-mode)
+
+
+;; popwin
+;; これ入れるなら compileのところのコード削除したほうがいい
+(unless (require 'popwin nil t) (package-install 'popwin))
+(setq display-buffer-function 'popwin:display-buffer)
+;; helm bufferをpopupする
+(setq helm-display-function #'display-buffer)
+(when (require 'popwin)
+  (setq display-buffer-function 'popwin:display-buffer)
+  (setq popwin:special-display-config
+    '(("*complitation*" :noselect t)
+      ("helm" :regexp t :height 0.4))))
+;; helmをbuffer名に含んでたら良いので、これだけでhelm-M-x,helm-find-files等に対応できます
+
 
 ;; multiple-cursor
 (unless (require 'multiple-cursors nil t) (package-install 'multiple-cursors))
