@@ -27,74 +27,102 @@
 ;;(add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t); httpsで通らないときこちら
 (package-initialize)
 
-;; 自動でpackageをロードする設定は以下をみて今後修正する
-;;;https://qiita.com/regashia/items/057b682dd29fbbdadd52
+;; 自動でpackageをロードする関数
+;; https://qiita.com/regashia/items/057b682dd29fbbdadd52
+;; https://github.com/purcell/emacs.d/blob/master/lisp/init-elpa.el#L35-L61
+
+(defun require-package (package &optional min-version no-refresh)
+  "Install given PACKAGE, optionally requiring MIN-VERSION.
+If NO-REFRESH is non-nil, the available package lists will not be
+re-downloaded in order to locate PACKAGE."
+  (if (package-installed-p package min-version)
+    (require package) ;; tからこれに変えた 元のはpackageが入ってたら何もしなかったがrequireするようにした
+    (if (or (assoc package package-archive-contents) no-refresh)
+      (if (boundp 'package-selected-packages)
+        ;; Record this as a package the user installed explicitly
+        (package-install package nil)
+        (package-install package))
+      (progn
+        (package-refresh-contents)
+        (require-package package min-version t)))))
+
+(defun maybe-require-package (package &optional min-version no-refresh)
+  "Try to install PACKAGE, and return non-nil if successful.
+In the event of failure, return nil and print a warning message.
+Optionally require MIN-VERSION.  If NO-REFRESH is non-nil, the
+available package lists will not be re-downloaded in order to
+locate PACKAGE."
+  (condition-case err
+    (require-package package min-version no-refresh)
+    (error
+      (message "Couldn't install optional package `%s': %S" package err)
+      nil)))
 
 
 ;;; テーマ
 (load-theme 'deeper-blue t)
 
 ;;; helm
-(unless (require 'helm nil t) (progn (package-refresh-contents) (package-install 'helm))) ;; helmは最初なのでここだけパッケージ一覧を更新している
-(helm-mode 1) ;helmを常に有効
-;;(define-key helm-find-files-map (kbd "TAB") 'helm-execute-persistent-action) ;;tabはアクション選択
-(define-key global-map (kbd "M-x") 'helm-M-x) ;;M-xの検索をhelmで行う
-(define-key global-map (kbd "C-x r b") #'helm-filtered-bookmarks)
-(define-key global-map (kbd "C-x C-f") #'helm-find-files) ;;elscreen-find-fileで置き換え予定
-(define-key global-map (kbd "C-x b") 'helm-mini)
-(define-key global-map (kbd "C-x C-b") 'helm-buffers-list)
-(define-key global-map (kbd "M-y") 'helm-show-kill-ring)
-(defvar my-helm-map (make-sparse-keymap) "My original helm keymap binding F7 and C-;.")
-(defalias 'my-helm-prefix my-helm-map)
-(define-key global-map [f7] 'my-helm-prefix)
-(define-key global-map (kbd "C-;") 'my-helm-prefix) ;; ネイティブwindowの時にしかキーが取れない rloginでは C-;を"\030@c;"に割り当てる
-(define-key my-helm-map (kbd "h") 'helm-mini)
-(define-key my-helm-map (kbd "b") 'helm-mini)
-;;(define-key my-helm-map (kbd "r") 'helm-recentf) ;; ielmの起動にした(repl)
-(define-key my-helm-map (kbd "i") 'helm-imenu)
-(define-key my-helm-map (kbd "k") 'helm-show-kill-ring)
-(define-key my-helm-map (kbd "o") 'helm-occur)
-(define-key my-helm-map (kbd "x") 'helm-M-x)
-(define-key my-helm-map (kbd "f") 'helm-browse-project) ;; git内に関係するファイル全部を絞り込める
+;;(unless (require 'helm nil t) (progn (package-refresh-contents) (package-install 'helm))) ;; helmは最初なのでここだけパッケージ一覧を更新している
+(when (maybe-require-package 'helm)
+  (helm-mode 1) ;helmを常に有効
+  ;;(define-key helm-find-files-map (kbd "TAB") 'helm-execute-persistent-action) ;;tabはアクション選択
+  (define-key global-map (kbd "M-x") 'helm-M-x) ;;M-xの検索をhelmで行う
+  (define-key global-map (kbd "C-x r b") #'helm-filtered-bookmarks)
+  (define-key global-map (kbd "C-x C-f") #'helm-find-files) ;;elscreen-find-fileで置き換え予定
+  (define-key global-map (kbd "C-x b") 'helm-mini)
+  (define-key global-map (kbd "C-x C-b") 'helm-buffers-list)
+  (define-key global-map (kbd "M-y") 'helm-show-kill-ring)
+  (defvar my-helm-map (make-sparse-keymap) "My original helm keymap binding F7 and C-;.")
+  (defalias 'my-helm-prefix my-helm-map)
+  (define-key global-map [f7] 'my-helm-prefix)
+  (define-key global-map (kbd "C-;") 'my-helm-prefix) ;; ネイティブwindowの時にしかキーが取れない rloginでは C-;を"\030@c;"に割り当てる
+  (define-key my-helm-map (kbd "h") 'helm-mini)
+  (define-key my-helm-map (kbd "b") 'helm-mini)
+  ;;(define-key my-helm-map (kbd "r") 'helm-recentf) ;; ielmの起動にした(repl)
+  (define-key my-helm-map (kbd "i") 'helm-imenu)
+  (define-key my-helm-map (kbd "k") 'helm-show-kill-ring)
+  (define-key my-helm-map (kbd "o") 'helm-occur)
+  (define-key my-helm-map (kbd "x") 'helm-M-x)
+  (define-key my-helm-map (kbd "f") 'helm-browse-project) ;; git内に関係するファイル全部を絞り込める
 
-;; helm-find-filesで . .. を削除する https://qiita.com/ponpoko1968/items/1d2378fd3f9ed3928978
-(advice-add 'helm-ff-filter-candidate-one-by-one
-        :around (lambda (fcn file)
-                  (unless (string-match "\\(?:/\\|\\`\\)\\.\\{1,2\\}\\'" file)
-                    (funcall fcn file))))
-
-;; windows版だと文字コード問題が起こる
-;; http://qiita.com/fujii_0v0/items/d6e96304e913027f48ac 時期を見てコンパイル方法を確立
+  ;; helm-find-filesで "." ".." を削除する
+  ;; https://qiita.com/ponpoko1968/items/1d2378fd3f9ed3928978
+  (advice-add 'helm-ff-filter-candidate-one-by-one
+              :around (lambda (fcn file)
+                        (unless (string-match "\\(?:/\\|\\`\\)\\.\\{1,2\\}\\'" file)
+                          (funcall fcn file))))
+  )
 
 ;;; helm-descbinds C-h bの結果を絞りこめる
-(unless (require 'helm-descbinds nil t) (package-install 'helm-descbinds))
-(helm-descbinds-mode)
+;;(unless (require 'helm-descbinds nil t) (package-install 'helm-descbinds))
+(when (maybe-require-package 'helm-descbinds)
+  (helm-descbinds-mode))
+
 
 ;; which-key(キーメニュー helm-descbindsと機能ダブってるよな・・・
-(unless (require 'which-key nil t) (package-install 'which-key))
-(which-key-mode)
+(when (maybe-require-package 'which-key)
+  (which-key-mode))
 
 
 ;; popwin
-;; これ入れるなら compileのところのコード削除したほうがいい
-(unless (require 'popwin nil t) (package-install 'popwin))
-(setq display-buffer-function 'popwin:display-buffer)
-;; helm bufferをpopupする
-(setq helm-display-function #'display-buffer)
-(when (require 'popwin)
+;; これ入れるなら rubyeのところのコード削除したほうがいい inf-rubyをpopwinに登録すれば終了？
+(when (maybe-require-package 'popwin)
   (setq display-buffer-function 'popwin:display-buffer)
-  (setq popwin:special-display-config
-    '(("*complitation*" :noselect t)
-      ("helm" :regexp t :height 0.4))))
-;; helmをbuffer名に含んでたら良いので、これだけでhelm-M-x,helm-find-files等に対応できます
+  (setq popwin:popup-window-position 'bottom) ;; 下から
+  (setq popwin:popup-window-height 0.3) ;;高さは３割
+
+  (push '("^\*helm .+\*$"  :regexp t)   popwin:special-display-config)
+  (push '("^\magit.+" :regexp t) popwin:special-display-config)
+  (push '("^\*magit.+" :regexp t) popwin:special-display-config))
 
 
 ;; multiple-cursor
-(unless (require 'multiple-cursors nil t) (package-install 'multiple-cursors))
-(global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
-(global-set-key (kbd "C->") 'mc/mark-next-like-this)
-(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
-(global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
+(when (maybe-require-package 'multiple-cursors)
+  (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+  (global-set-key (kbd "C->") 'mc/mark-next-like-this)
+  (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+  (global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this))
 
 
 ;;; silver-seacher(ag)
@@ -102,8 +130,7 @@
 ;;; 起点ディレクトリを変えたいときにはC-uC-xg
 ;;; sudo apt-get install silver-searcher
 (when (executable-find "ag")
-  (progn
-    (unless (require 'helm-ag nil t) (package-install 'helm-ag))
+  (when (maybe-require-package 'helm-ag)
     (define-key global-map (kbd "C-x g") 'helm-ag)
     (define-key my-helm-map (kbd "g") 'helm-ag)))
 
@@ -111,8 +138,7 @@
 ;;; gnu global (gtags)
 ;;; gnu global がインストールされているならばhelm-gtagsを使う
 (when (executable-find "global")
-  (progn
-    (unless (require 'helm-gtags nil t) (package-install 'helm-gtags))
+  (when (maybe-require-package 'helm-gtags)
     (add-hook 'go-mode-hook (lambda () (helm-gtags-mode)))
     (add-hook 'python-mode-hook (lambda () (helm-gtags-mode)))
     (add-hook 'ruby-mode-hook (lambda () (helm-gtags-mode)))
@@ -139,160 +165,130 @@
 ;;; company-mode
 ;;; http://qiita.com/sune2/items/b73037f9e85962f5afb7
 ;;; http://qiita.com/syohex/items/8d21d7422f14e9b53b17
-(unless (require 'company nil t) (package-install 'company))
-(global-company-mode) ; 全バッファで有効にする
-(setq company-idle-delay 0) ; デフォルトは0.5
-(setq company-minimum-prefix-length 2) ; デフォルトは4
-(setq company-selection-wrap-around t) ; 候補の一番下でさらに下に行こうとすると一番上に戻る
-(setq completion-ignore-case t)
-(setq company-dabbrev-downcase nil)
+(when (maybe-require-package 'company)
+  (global-company-mode) ; 全バッファで有効にする
+  (setq company-idle-delay 0) ; デフォルトは0.5
+  (setq company-minimum-prefix-length 2) ; デフォルトは4
+  (setq company-selection-wrap-around t) ; 候補の一番下でさらに下に行こうとすると一番上に戻る
+  (setq completion-ignore-case t)
+  (setq company-dabbrev-downcase nil)
 
-(defun company--insert-candidate2 (candidate)
-  "Match company-mode behavior to autocomplete.CANDIDATE."
-  (when (> (length candidate) 0)
-    (setq candidate (substring-no-properties candidate))
-    (if (eq (company-call-backend 'ignore-case) 'keep-prefix)
-        (insert (company-strip-prefix candidate))
-      (if (equal company-prefix candidate)
-          (company-select-next) ;; タブを押したら次候補
-        (delete-region (- (point) (length company-prefix)) (point))
-        (insert candidate))
-      )))
-(defun company--insert-candidate3 (candidate)
-  "Match company-mode behavior to autocomplete.CANDIDATE."
-  (when (> (length candidate) 0)
-    (setq candidate (substring-no-properties candidate))
-    (if (eq (company-call-backend 'ignore-case) 'keep-prefix)
-        (insert (company-strip-prefix candidate))
-      (if (equal company-prefix candidate)
-          (company-complete-selection) ;; タブを押したら確定にしたかった
-        (delete-region (- (point) (length company-prefix)) (point))
-        (insert candidate))
-      )))
-(defun company-complete-common2 ()
-  "Match company-mode behavior to autocomplete."
-  (interactive)
-  (when (company-manual-begin)
-    (if (and (not (cdr company-candidates))
-             (equal company-common (car company-candidates)))
-        (company-complete-selection)
-      (company--insert-candidate3 company-common))))
-     ;; (company--insert-candidate2 company-common))))
+  (define-key company-active-map (kbd "M-n") nil)
+  (define-key company-active-map (kbd "M-p") nil)
+  (define-key company-active-map (kbd "C-n") 'company-select-next)
+  (define-key company-active-map (kbd "C-p") 'company-select-previous)
+  (define-key company-active-map (kbd "C-h") nil)
+  (global-set-key (kbd "C-M-i") 'company-complete)
+  (define-key company-active-map (kbd "C-M-h") 'company-show-doc-buffer) ;; ドキュメント表示はC-Shift-h
+  (define-key company-active-map [backtab] 'company-select-previous) ; おまけ
 
-(define-key company-active-map (kbd "M-n") nil)
-(define-key company-active-map (kbd "M-p") nil)
-(define-key company-active-map (kbd "C-n") 'company-select-next)
-(define-key company-active-map (kbd "C-p") 'company-select-previous)
-(define-key company-active-map (kbd "C-h") nil)
-(global-set-key (kbd "C-M-i") 'company-complete)
-;(define-key company-active-map [tab] 'company-complete-selection) ;; TABで候補を設定
-;(define-key company-active-map [tab] 'company-complete-common2)
-(define-key company-active-map (kbd "C-h") nil) ;; C-hはバックスペース割当のため無効化
-(define-key company-active-map (kbd "C-S-h") 'company-show-doc-buffer) ;; ドキュメント表示はC-Shift-h
-(define-key company-active-map [backtab] 'company-select-previous) ; おまけ
+  ;;色（デフォルトはどぎつい)
+  (set-face-attribute 'company-preview-common nil :inherit 'company-preview :foreground "lightgrey")
+  (set-face-attribute 'company-scrollbar-bg nil :background "gray")
+  (set-face-attribute 'company-scrollbar-fg nil :background "steelblue")
+  (set-face-attribute 'company-tooltip nil :background "lightgrey" :foreground "black")
+  (set-face-attribute 'company-tooltip-selection  nil :background "light steel blue")
+  )
 
-;;色（デフォルトはどぎつい)
-(set-face-attribute 'company-preview-common nil :inherit 'company-preview :foreground "lightgrey")
-(set-face-attribute 'company-scrollbar-bg nil :background "gray")
-(set-face-attribute 'company-scrollbar-fg nil :background "steelblue")
-(set-face-attribute 'company-tooltip nil :background "lightgrey" :foreground "black")
-(set-face-attribute 'company-tooltip-selection  nil :background "light steel blue")
+;; pos-tip
+(when (and window-system (maybe-require-package 'pos-tip)))
 
 ;; company-quickhelp
-(unless (require 'company-quickhelp nil  t) (package-install 'company-quickhelp))
+;; 登録できてるが動いていない pos-tipを使うらしい
 (when window-system
-  (company-quickhelp-mode +1))
-(eval-after-load 'company
-  '(define-key company-active-map (kbd "C-c h") #'company-quickhelp-manual-begin))
+  (when (maybe-require-package 'company-quickhelp)
+    (company-quickhelp-mode +1))
+  (eval-after-load 'company
+    '(define-key company-active-map (kbd "C-c h") #'company-quickhelp-manual-begin)))
 
 
 ;;; yasnippet
 ;; 原則メニューを見れば片付く
 ;; http://vdeep.net/emacs-yasnippet をみてもう少しいじる
-(unless (require 'yasnippet nil t) (package-install 'yasnippet))
-(unless (require 'yasnippet-snippets nil t) (package-install 'yasnippet-snippets))
-(yas-global-mode 1);;; バックアップファイルを~/.emacs.d/backupへ
-(unless (file-exists-p (expand-file-name "~/.emacs.d/mySnippets")) (make-directory (expand-file-name "~/.emacs.d/mySnippets")))
-(add-to-list 'yas-snippet-dirs (expand-file-name "~/.emacs.d/mySnippets/"))
-;; Add yasnippet support for all company backends
-;; https://github.com/syl20bnr/spacemacs/pull/179
-(defvar company-mode/enable-yas t
-  "Enable yasnippet for all backends.")
-(defun company-mode/backend-with-yas (backend)
-  (if (or (not company-mode/enable-yas) (and (listp backend) (member 'company-yasnippet backend)))
-      backend
-    (append (if (consp backend) backend (list backend))
-            '(:with company-yasnippet))))
-(setq company-backends (mapcar #'company-mode/backend-with-yas company-backends))
-
-
-;; pos-tip
-(unless (require 'pos-tip nil t) (package-install 'pos-tip))
+;;(unless (require 'yasnippet nil t) (package-install 'yasnippet))
+;;(unless (require 'yasnippet-snippets nil t) (package-install 'yasnippet-snippets))
+(when (and (maybe-require-package 'yasnippet) (maybe-require-package 'yasnippet-snippets))
+    (yas-global-mode 1)
+    (unless (file-exists-p (expand-file-name "~/.emacs.d/mySnippets")) (make-directory (expand-file-name "~/.emacs.d/mySnippets")))
+    (add-to-list 'yas-snippet-dirs (expand-file-name "~/.emacs.d/mySnippets/"))
+    ;; Add yasnippet support for all company backends
+    ;; https://github.com/syl20bnr/spacemacs/pull/179
+    (defvar company-mode/enable-yas t
+      "Enable yasnippet for all backends.")
+    (defun company-mode/backend-with-yas (backend)
+      (if (or (not company-mode/enable-yas) (and (listp backend) (member 'company-yasnippet backend)))
+          backend
+        (append (if (consp backend) backend (list backend))
+                '(:with company-yasnippet))))
+    (setq company-backends (mapcar #'company-mode/backend-with-yas company-backends)))
 
 
 ;;; elscreen  emacs版screen キーバインドが気に入らない
 ;;; elscreen のリナンバーは https://github.com/momomo5717/elscreen-outof-limit-mode
 ;;; タブをフレームタイトルに入れる https://qiita.com/kaz-yos/items/9dffd94694adf59449b7
-(unless (require 'elscreen nil t) (package-install 'elscreen))
-(elscreen-start)
-(define-key elscreen-map (kbd "C-z") 'elscreen-toggle) ; C-zC-zを一つ前のwindowにする
-(define-key my-helm-map (kbd "C-;") 'elscreen-toggle) ; C-;C-;を一つ前のwindowにする
-(define-key my-helm-map (kbd "c") 'elscreen-create)
-(define-key my-helm-map (kbd "C-p") 'elscreen-previous)
-(define-key my-helm-map (kbd "C-n") 'elscreen-next)
-(define-key my-helm-map (kbd "<up>") 'elscreen-previous)
-(define-key my-helm-map (kbd "<left>") 'elscreen-previous)
-(define-key my-helm-map (kbd "<down>") 'elscreen-next)
-(define-key my-helm-map (kbd "<right>") 'elscreen-next)
-(dolist (x '(0 1 2 3 4 5 6 7 8 9)) (define-key my-helm-map (kbd (number-to-string x)) 'elscreen-jump)) ; C-;0-9をelscreen切り替え
-;;(setq elscreen-tab-display-kill-screen nil) ;タブの先頭に[x]を表示しない
-;;(setq elscreen-tab-display-control nil) ; header-lineの先頭に[<->]を表示しない
-;;(define-key global-map (kbd "C-x C-f") 'elscreen-find-file)
+;;(unless (require 'elscreen nil t) (package-install 'elscreen))
+(when (maybe-require-package 'elscreen)
+  (elscreen-start)
+  (define-key elscreen-map (kbd "C-z") 'elscreen-toggle) ; C-zC-zを一つ前のwindowにする
+  (define-key my-helm-map (kbd "C-;") 'elscreen-toggle) ; C-;C-;を一つ前のwindowにする
+  (define-key my-helm-map (kbd "c") 'elscreen-create)
+  (define-key my-helm-map (kbd "C-p") 'elscreen-previous)
+  (define-key my-helm-map (kbd "C-n") 'elscreen-next)
+  (define-key my-helm-map (kbd "<up>") 'elscreen-previous)
+  (define-key my-helm-map (kbd "<left>") 'elscreen-previous)
+  (define-key my-helm-map (kbd "<down>") 'elscreen-next)
+  (define-key my-helm-map (kbd "<right>") 'elscreen-next)
+  (dolist (x '(0 1 2 3 4 5 6 7 8 9)) (define-key my-helm-map (kbd (number-to-string x)) 'elscreen-jump)) ; C-;0-9をelscreen切り替え
+  ;;(setq elscreen-tab-display-kill-screen nil) ;タブの先頭に[x]を表示しない
+  ;;(setq elscreen-tab-display-control nil) ; header-lineの先頭に[<->]を表示しない
+  ;;(define-key global-map (kbd "C-x C-f") 'elscreen-find-file)
 ;;; ↑ <tab>のアクションに 同じwindowで開くを入れる
-(define-key global-map (kbd "C-x d") 'elscreen-dired)
-;; https://gist.github.com/momomo5717 からrenumberをもらった
-(defun elscreen-renumber ()
-  "Elscreen renumber."
-  (interactive)
-  (cl-loop for i from 0 for s in (sort (elscreen-get-screen-list) '<) do
-           (when (/= i s)
-             (setf (car (assoc s (elscreen-get-conf-list 'screen-property))) i
-              (car (member s (elscreen-get-conf-list 'screen-history))) i
-              (car (assoc s (elscreen-get-screen-to-name-alist-cache))) i)))
-  (elscreen-tab-update t))
-(defun elscreen-kill-and-kill-buffer ()
-  "Elscreen kill and kill buffer."
-  (interactive)
-  (unless (string= (buffer-name) "*scratch*") (kill-buffer))
-  ;;(kill-buffer)
-  (elscreen-kill)
-  (elscreen-renumber) ;; タブナンバーを振り付けする、ショートカットの関係上本当は1カラにしたい http://d.hatena.ne.jp/ken_m/20110607/1307451681
-  )
-(define-key global-map (kbd "C-x k") 'elscreen-kill-and-kill-buffer)
-;;  (if (eq 1 (length (elscreen-get-screen-list))) ;;elscreenのタブの数はこれでわかる
+  (define-key global-map (kbd "C-x d") 'elscreen-dired)
+  ;; https://gist.github.com/momomo5717 からrenumberをもらった
+  (defun elscreen-renumber ()
+    "Elscreen renumber."
+    (interactive)
+    (cl-loop for i from 0 for s in (sort (elscreen-get-screen-list) '<) do
+             (when (/= i s)
+               (setf (car (assoc s (elscreen-get-conf-list 'screen-property))) i
+                     (car (member s (elscreen-get-conf-list 'screen-history))) i
+                     (car (assoc s (elscreen-get-screen-to-name-alist-cache))) i)))
+    (elscreen-tab-update t))
+  (defun elscreen-kill-and-kill-buffer ()
+    "Elscreen kill and kill buffer."
+    (interactive)
+    (unless (string= (buffer-name) "*scratch*") (kill-buffer))
+    ;;(kill-buffer)
+    (elscreen-kill)
+    (elscreen-renumber) ;; タブナンバーを振り付けする、ショートカットの関係上本当は1カラにしたい http://d.hatena.ne.jp/ken_m/20110607/1307451681
+    )
+  ;;  (if (eq 1 (length (elscreen-get-screen-list))) ;;elscreenのタブの数はこれでわかる
+  (define-key global-map (kbd "C-x k") 'elscreen-kill-and-kill-buffer))
 
 
 ;;; helm-elscreen
 ;;; elscreenのインターフェイスをhelmにする
 ;;; またhelmのactionのデフォルトをelscreenにする
-(unless (require 'helm-elscreen nil t) (package-install 'helm-elscreen))
-(setq helm-type-file-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-type-file-actions)) ;;helm-findのとき
-(setq helm-find-files-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-find-files-actions)) ;;helm-find-filesはこちら
-(setq helm-type-buffer-actions (cons '("Find buffer elscreen" . helm-elscreen-find-buffer) helm-type-buffer-actions))
+;;(unless (require 'helm-elscreen nil t) (package-install 'helm-elscreen))
+(when (and (maybe-require-package 'helm) (maybe-require-package 'elscreen) (maybe-require-package 'helm-elscreen))
+  (setq helm-type-file-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-type-file-actions)) ;;helm-findのとき
+  (setq helm-find-files-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-find-files-actions)) ;;helm-find-filesはこちら
+  (setq helm-type-buffer-actions (cons '("Find buffer elscreen" . helm-elscreen-find-buffer) helm-type-buffer-actions)))
 
 
 ;;; sr-speedbar
 ;;; デフォルトでくっついてくるspeedbarをフレーム(window内に入れる)
-(unless (require 'sr-speedbar nil t) (package-install 'sr-speedbar))
-(setq sr-speedbar-right-side nil)
-(define-key global-map [f8] 'sr-speedbar-toggle) ;F8キーをspeedbarのon/offにする
-;;; speedbarでhelm-ag 右ボタンメニューに入れられてない。
-(defun my/speedbar-helm-ag ()
-  "Execute helm ag on speedbar directory."
-  (interactive)
-  (helm-ag (speedbar-line-file)))
-(define-key speedbar-file-key-map "G" 'my/speedbar-helm-ag)
-
+;;; そのうち neotreeに変える
+(when (maybe-require-package 'sr-speedbar)
+  (unless (require 'sr-speedbar nil t) (package-install 'sr-speedbar))
+  (setq sr-speedbar-right-side nil)
+  (define-key global-map [f8] 'sr-speedbar-toggle) ;F8キーをspeedbarのon/offにする
+  ;; speedbarでhelm-ag 右ボタンメニューに入れられてない。
+  (defun my/speedbar-helm-ag ()
+    "Execute helm ag on speedbar directory."
+    (interactive)
+    (helm-ag (speedbar-line-file)))
+  (define-key speedbar-file-key-map "G" 'my/speedbar-helm-ag))
 
 
 ;;; org-mode
@@ -304,7 +300,7 @@
   "My org mode hook."
   (progn
     (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t)
-    (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
+    ;; (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
 
     ;; babel の出力の調整
     (setf (alist-get :exports org-babel-default-header-args) "both") ;; githubではbothにしておかないと表示しない
@@ -314,7 +310,22 @@
     (when (eq system-type 'darwin) ;; macのときだけorgの段落キーバインドを変える
       (define-key org-mode-map (kbd "M-{") 'elscreen-previous)
       (define-key org-mode-map (kbd "M-}") 'elscreen-next))
-    ))
+    )
+  )
+
+(with-eval-after-load 'org
+    (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
+
+    ;; babel の出力の調整
+    ;; (setf (alist-get :exports org-babel-default-header-args) "both") ;; githubではbothにしておかないと表示しない
+    ;; (setf (alist-get :results org-babel-default-header-args:python) "output") ;; pythonはデフォoutputのほうが使いやすい
+    ;; (setf (alist-get :results org-babel-default-header-args:js) "output") ;; jsも
+
+    ;; (when (eq system-type 'darwin) ;; macのときだけorgの段落キーバインドを変える
+    ;;   (define-key org-mode-map (kbd "M-{") 'elscreen-previous)
+    ;;   (define-key org-mode-map (kbd "M-}") 'elscreen-next))
+    )
+
 
 (define-key my-helm-map (kbd "a") 'org-agenda)
 (define-key my-helm-map (kbd "c") 'org-capture)
@@ -1189,7 +1200,32 @@
 (when window-system
   (unless (require 'powerline nil t) (package-install 'power-line))
   (powerline-default-theme) ;;とりあえずデフォルト
+
+ ;; helmのモードラインを変更しようとしたがうまく行っていない。
+;;  (defadvice helm-display-mode-line (after spaceline-helm)
+;;    "Set up a custom helm modeline."
+;;    (setq spaceline--helm-current-source source
+;;          mode-line-format '("%e" (:eval (spaceline--prepare
+;;                                          '(helm-buffer-id
+;;                                            helm-number
+;;                                            helm-follow
+;;                                            helm-prefix-argument)
+;;                                          '(helm-help)))))
+;;    (when force (force-mode-line-update)))
+;;
+;;  (define-minor-mode spaceline-helm-mode
+;;    "Customize the mode-line in helm."
+;;    :init-value nil
+;;    :global t
+;;    ;; (if (setq )paceline-helm-mode
+;;    ;;     (advice-add 'helm-display-mode-line :after 'spaceline-helm)
+;;    ;;   (advice-(region-end)move 'helm-display-mode-line 'spaceline-helm))
+;;    (if spaceline-helm-mode
+;;        (ad-activate 'helm-display-mode-line)
+;;      (ad-deactivate 'helm-display-mode-line)))
+;;
   )
+
 
 
 ;; font
