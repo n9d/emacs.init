@@ -72,6 +72,10 @@
 
 
 
+;; which-key(キーメニュー helm-descbindsと機能ダブってるよな・・・
+(unless (require 'which-key nil t) (package-install 'which-key))
+(which-key-mode)
+
 ;; multiple-cursor
 (unless (require 'multiple-cursors nil t) (package-install 'multiple-cursors))
 (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
@@ -920,7 +924,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (markdown-mode+ mozc inf-ruby helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
+    (powerline markdown-mode+ mozc inf-ruby helm-flycheck flycheck web-mode undo-tree sr-speedbar smart-compile rainbow-delimiters js2-mode helm-gtags helm-elscreen helm-descbinds helm-ag company-web company-tern))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -1162,6 +1166,12 @@
   ;; mozc-toolsを入れる
   ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
   ;;https://yo.eki.do/notes/emacs-windows-2017
+  )
+
+;; mode-line (powerline)
+(when window-system
+  (unless (require 'powerline nil t) (package-install 'power-line))
+  (powerline-default-theme) ;;とりあえずデフォルト
   )
 
 
