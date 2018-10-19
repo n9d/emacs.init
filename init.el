@@ -302,6 +302,9 @@
 (define-key my-helm-map (kbd "a") 'org-agenda)
 (define-key my-helm-map (kbd "c") 'org-capture)
 
+;;(setq org-startup-with-inline-images t) ;;インライン画像を表示 C-cC-xC-vでトグルするので不要
+;; http://lioon.net/org-mode-view-style をもう少し研究する
+
 ;;https://skalldan.wordpress.com/2011/07/16/%E8%89%B2%E3%80%85-org-capture-%E3%81%99%E3%82%8B-2/ これが参考になる？
 
 (unless (file-exists-p (expand-file-name "~/org")) (make-directory (expand-file-name "~/org"))) ;ホームにorgがなかったら作る
@@ -315,6 +318,7 @@
 (add-hook 'org-mode-hook #'my-org-mode-hook)
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
 (setq org-log-done 'time);; DONEの時刻を記録
+
 
 (eval-after-load 'org
                 '(progn
@@ -355,6 +359,9 @@
 ;;; ox-qmd qiita用
 (unless (require 'ox-qmd nil t ) (package-install 'ox-qmd))
 
+
+;; ドラッグ＆ドロップで画像をorgに貼り付ける
+(unless (require 'org-download nil t) (package-install 'org-download))
 
 
 ;;;
