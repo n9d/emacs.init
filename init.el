@@ -36,7 +36,7 @@
 If NO-REFRESH is non-nil, the available package lists will not be
 re-downloaded in order to locate PACKAGE."
   (if (package-installed-p package min-version)
-    (require package) ;; tからこれに変えた 元のはpackageが入ってたら何もしなかったがrequireするようにした
+      (require package) ;; tからこれに変えた 元のはpackageが入ってたら何もしなかったがrequireするようにした
     (if (or (assoc package package-archive-contents) no-refresh)
       (if (boundp 'package-selected-packages)
         ;; Record this as a package the user installed explicitly
@@ -108,13 +108,16 @@ locate PACKAGE."
 ;; popwin
 ;; これ入れるなら rubyeのところのコード削除したほうがいい inf-rubyをpopwinに登録すれば終了？
 (when (maybe-require-package 'popwin)
+  ;;(require 'popwin) ;; popwinは自動ロードしない
   (setq display-buffer-function 'popwin:display-buffer)
   (setq popwin:popup-window-position 'bottom) ;; 下から
   (setq popwin:popup-window-height 0.3) ;;高さは３割
 
-  (push '("^\*helm .+\*$"  :regexp t)   popwin:special-display-config)
-  (push '("^\magit.+" :regexp t) popwin:special-display-config)
-  (push '("^\*magit.+" :regexp t) popwin:special-display-config))
+  (push '("^\*helm .+\*$"  :regexp t :height 0.4)   popwin:special-display-config)
+  (push '("^\magit.+\$" :regexp t) popwin:special-display-config)
+  (push '("^\*magit.+\$" :regexp t) popwin:special-display-config)
+  ;;(push '("*undo-tree*") popwin:special-display-config) ;; うまく動かないもともとC-gでundotreeがうごいているのでいいか
+  (push '("^\*Org-Babel.*\$" :regexp t) popwin:special-display-config))
 
 
 ;; multiple-cursor
@@ -129,16 +132,14 @@ locate PACKAGE."
 ;;; agが入っていればhelm-agを使う
 ;;; 起点ディレクトリを変えたいときにはC-uC-xg
 ;;; sudo apt-get install silver-searcher
-(when (executable-find "ag")
-  (when (maybe-require-package 'helm-ag)
+(when (and (executable-find "ag") (maybe-require-package 'helm-ag))
     (define-key global-map (kbd "C-x g") 'helm-ag)
-    (define-key my-helm-map (kbd "g") 'helm-ag)))
+    (define-key my-helm-map (kbd "g") 'helm-ag))
 
 
 ;;; gnu global (gtags)
 ;;; gnu global がインストールされているならばhelm-gtagsを使う
-(when (executable-find "global")
-  (when (maybe-require-package 'helm-gtags)
+(when (and (executable-find "global") (maybe-require-package 'helm-gtags))
     (add-hook 'go-mode-hook (lambda () (helm-gtags-mode)))
     (add-hook 'python-mode-hook (lambda () (helm-gtags-mode)))
     (add-hook 'ruby-mode-hook (lambda () (helm-gtags-mode)))
@@ -157,7 +158,7 @@ locate PACKAGE."
                  ;;(local-set-key (kbd "M-t") 'helm-gtags-find-tag)
                  ;;入力タグを参照する場所へジャンプ
                  ;;(local-set-key (kbd "M-r") 'helm-gtags-find-rtag)
-                 ))))
+                 )))
 
 ;;https://www.emacswiki.org/emacs/HelmSwoop
 ;; helmSwoopを入れる
@@ -195,18 +196,15 @@ locate PACKAGE."
 
 ;; company-quickhelp
 ;; 登録できてるが動いていない pos-tipを使うらしい
-(when window-system
-  (when (maybe-require-package 'company-quickhelp)
+(when (and window-system (maybe-require-package 'company-quickhelp))
     (company-quickhelp-mode +1))
   (eval-after-load 'company
-    '(define-key company-active-map (kbd "C-c h") #'company-quickhelp-manual-begin)))
+    '(define-key company-active-map (kbd "C-c h") #'company-quickhelp-manual-begin))
 
 
 ;;; yasnippet
 ;; 原則メニューを見れば片付く
 ;; http://vdeep.net/emacs-yasnippet をみてもう少しいじる
-;;(unless (require 'yasnippet nil t) (package-install 'yasnippet))
-;;(unless (require 'yasnippet-snippets nil t) (package-install 'yasnippet-snippets))
 (when (and (maybe-require-package 'yasnippet) (maybe-require-package 'yasnippet-snippets))
     (yas-global-mode 1)
     (unless (file-exists-p (expand-file-name "~/.emacs.d/mySnippets")) (make-directory (expand-file-name "~/.emacs.d/mySnippets")))
@@ -269,7 +267,6 @@ locate PACKAGE."
 ;;; helm-elscreen
 ;;; elscreenのインターフェイスをhelmにする
 ;;; またhelmのactionのデフォルトをelscreenにする
-;;(unless (require 'helm-elscreen nil t) (package-install 'helm-elscreen))
 (when (and (maybe-require-package 'helm) (maybe-require-package 'elscreen) (maybe-require-package 'helm-elscreen))
   (setq helm-type-file-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-type-file-actions)) ;;helm-findのとき
   (setq helm-find-files-actions (cons '("Find file Elscreen" . helm-elscreen-find-file) helm-find-files-actions)) ;;helm-find-filesはこちら
@@ -296,36 +293,34 @@ locate PACKAGE."
 ;;; 埋め込みは http://tanehp.ec-net.jp/heppoko-lab/prog/resource/org_mode/org_mode_memo.html が参考になる
 ;;; #+ の補完をやってくれるようにする
 ;;(require 'org-mode)
+(add-hook 'org-mode-hook #'my-org-mode-hook)
 (defun my-org-mode-hook ()
   "My org mode hook."
   (progn
-    (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t)
-    ;; (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
+    (add-hook 'completion-at-point-functions 'pcomplete-completions-at-point nil t)))
 
+;; org-modeロード時に評価
+(with-eval-after-load 'org
     ;; babel の出力の調整
     (setf (alist-get :exports org-babel-default-header-args) "both") ;; githubではbothにしておかないと表示しない
+    (require 'ob-python) ;; これをやっておかないとheade-ags:pythonが見えない
     (setf (alist-get :results org-babel-default-header-args:python) "output") ;; pythonはデフォoutputのほうが使いやすい
+    (require 'ob-js) ;; これをやっておかないとheade-ags:pythonが見えない
     (setf (alist-get :results org-babel-default-header-args:js) "output") ;; jsも
+
+    ;; org template expansion に 加える githubのorg-modeが :exports bothにしないと出力しない
+    (add-to-list 'org-structure-template-alist '("J" "#+BEGIN_SRC js :exports both\n?\n#+END_SRC"))
+    (add-to-list 'org-structure-template-alist '("R" "#+BEGIN_SRC ruby :exports both\n?\n#+END_SRC"))
+    (add-to-list 'org-structure-template-alist '("P" "#+BEGIN_SRC python :exports both\n?\n#+END_SRC"))
+    (add-to-list 'org-structure-template-alist '("S" "#+BEGIN_SRC sh :exports both\n?\n#+END_SRC"))
+    (add-to-list 'org-structure-template-alist '("E" "#+BEGIN_SRC emacs-lisp :exports both :results pp\n?\n#+END_SRC"))
+
+    (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
 
     (when (eq system-type 'darwin) ;; macのときだけorgの段落キーバインドを変える
       (define-key org-mode-map (kbd "M-{") 'elscreen-previous)
       (define-key org-mode-map (kbd "M-}") 'elscreen-next))
     )
-  )
-
-(with-eval-after-load 'org
-    (define-key org-mode-map (kbd "\C-cp") 'picture-mode) ;; org-modeではC-cpで起動
-
-    ;; babel の出力の調整
-    ;; (setf (alist-get :exports org-babel-default-header-args) "both") ;; githubではbothにしておかないと表示しない
-    ;; (setf (alist-get :results org-babel-default-header-args:python) "output") ;; pythonはデフォoutputのほうが使いやすい
-    ;; (setf (alist-get :results org-babel-default-header-args:js) "output") ;; jsも
-
-    ;; (when (eq system-type 'darwin) ;; macのときだけorgの段落キーバインドを変える
-    ;;   (define-key org-mode-map (kbd "M-{") 'elscreen-previous)
-    ;;   (define-key org-mode-map (kbd "M-}") 'elscreen-next))
-    )
-
 
 (define-key my-helm-map (kbd "a") 'org-agenda)
 (define-key my-helm-map (kbd "c") 'org-capture)
@@ -337,26 +332,12 @@ locate PACKAGE."
 
 (unless (file-exists-p (expand-file-name "~/org")) (make-directory (expand-file-name "~/org"))) ;ホームにorgがなかったら作る
 (setq org-capture-templates
-      '(("t" "Todo" entry (file+headline "~/org/gtd.org" "Tasks")
-     "* TODO %?\n  %i\n  %a")
-        ("j" "Journal" entry (file+datetree "~/org/journal.org")
-     "* %?\nEntered on %U\n  %i\n  %a")))
+      '(("t" "Todo" entry (file+headline "~/org/gtd.org" "Tasks") "* TODO %?\n  %i\n  %a")
+        ("j" "Journal" entry (file+datetree "~/org/journal.org") "* %?\nEntered on %U\n  %i\n  %a")))
 
 
-(add-hook 'org-mode-hook #'my-org-mode-hook)
 (setq org-todo-keywords '((sequence "TODO(t)" "WAIT(w)" "|" "DONE(d)" "SOMEDAY(s)"))) ;; TODO状態
 (setq org-log-done 'time);; DONEの時刻を記録
-
-
-(eval-after-load 'org
-                '(progn
-                   ;; org template expansion に 加える githubのorg-modeが :exports bothにしないと出力しない
-                   (add-to-list 'org-structure-template-alist '("J" "#+BEGIN_SRC js :exports both\n?\n#+END_SRC"))
-                   (add-to-list 'org-structure-template-alist '("R" "#+BEGIN_SRC ruby :exports both\n?\n#+END_SRC"))
-                   (add-to-list 'org-structure-template-alist '("P" "#+BEGIN_SRC python :exports both\n?\n#+END_SRC"))
-                   (add-to-list 'org-structure-template-alist '("S" "#+BEGIN_SRC shell :exports both\n?\n#+END_SRC"))
-                   ))
-
 
 ;;http://misohena.jp/blog/2017-10-26-how-to-use-code-block-of-emacs-org-mode.html
 ;; メモ書きに大変便利、結果は#+begin_src ruby で結果はC-cC-c出力
@@ -370,6 +351,7 @@ locate PACKAGE."
            python
            ruby
            js
+           shell
            ,(if (locate-library "ob-shell") 'shell 'sh)
            sqlite
            )))
@@ -382,14 +364,10 @@ locate PACKAGE."
 (setq org-confirm-babel-evaluate nil) ;; コードを評価するとき尋ねない ditaa作成時の問い合わせをoff
 
 ;;; org-mode のエクスポーター
-;;; htmlize orgから出力するのに必要
-(unless (require 'htmlize nil t ) (package-install 'htmlize))
-;;; ox-qmd qiita用
-(unless (require 'ox-qmd nil t ) (package-install 'ox-qmd))
+(maybe-require-package 'htmlize) ;; htmlize orgから出力するのに必要
+(maybe-require-package 'ox-qmd) ;; ox-qmd qiita用
 
-
-;; ドラッグ＆ドロップで画像をorgに貼り付ける
-(unless (require 'org-download nil t) (package-install 'org-download))
+(and window-system (maybe-require-package 'org-download)) ;; ドラッグ＆ドロップで画像をorgに貼り付ける
 
 
 ;;;
@@ -481,35 +459,25 @@ locate PACKAGE."
 (defun picture-line-delete-down (n) "Delete line down.  N." (interactive "p") (picture-line-draw n 1 0 t))
 
 
-;;;
-;;; ETC
-;;;
-
-
 ;; magit
-;; もう一回勉強し直す https://qiita.com/maueki/items/70dbf62d8bd2ee348274
+;; https://qiita.com/maueki/items/70dbf62d8bd2ee348274
 ;; https://qiita.com/egg_chicken/items/948f8df70069334e8296
-;; VC(emacsのversion controlシステム)のままだとコマンド必須になるので入れる
-;; もしかすると helm-gitにした方がいいかもしれない
 ;; helm-ls-gitでもいいかも
-;; projectile,helm-projectileとの関係上 magitはやめたほうがいいかも
+;; projectile,helm-projectileの関係を整理する
 (unless (require 'magit nil t) (package-install 'magit))
-;;(unless (require 'magit-popup nil t) (package-install 'magit-popup))
-(global-set-key (kbd "C-x m") 'magit-status)
+(global-set-key (kbd "C-x m") 'magit-status) ;; magitを立ち上げるとC-xgも有効になってしまう
 (define-key my-helm-map (kbd "m") 'magit-status)
- ;;;ファイルが巨大だとgit brameがきれいに動かない VCのC-xvgは秀逸！
-;; vc-annotate
+
+
+;; vc-annotate ファイルが巨大だとgit brameがきれいに動かない VCのC-xvgは秀逸！
 ;; https://blog.kyanny.me/entry/2014/08/16/022311
 (defadvice vc-git-annotate-command (around vc-git-annotate-command activate)
   "Suppress relative path of file from git blame output."
   (let ((name (file-relative-name file)))
     (vc-git-command buf 'async nil "blame" "--date=iso" rev "--" name)))
-;;(add-hook 'magit-mode-hook 'magit-svn-mode)
-;; (define-key vc-prefix-map (kbd "l") 'magit-log-buffer-file-popup)
 
 
 ;;; ediff
-;;; これがなければ意味が無いぐらい
 (setq ediff-window-setup-function 'ediff-setup-windows-plain) ;コントロール用のバッファを同一フレーム内に表示
 (setq ediff-split-window-function 'split-window-horizontally) ; diffのバッファを上下ではなく 左右に並べる
 
@@ -519,17 +487,16 @@ locate PACKAGE."
 ;;; 問題点は C-?がwindowsのC-yのredoとはちょっと違うことあくまでundoの取り消しとしてのredo
 ;;; 繰り返しはキーボードマクロつかえということか。（redoまわりは今後調整する)
 ;;; undo-tree 自身はC-xuで起動
-(unless (require 'undo-tree nil t) (package-install 'undo-tree))
-(global-undo-tree-mode)
-(define-key global-map (kbd "M-/") 'undo-tree-redo) ;; C-/ がundoの反対
-;;(define-key undo-tree-map [return] 'undo-tree-visualizer-quit) ;; RETもquitにする qを押し忘れる なんか動きおかしい
+(when (maybe-require-package 'undo-tree)
+  (global-undo-tree-mode)
+  (define-key global-map (kbd "M-/") 'undo-tree-redo)) ;; C-/ がundoの反対
 
 
 ;;; 操作系の基本設定
 (setq suggest-key-bindings t)        ; キーバインドの通知(登録されているキーが有るとき教えてくれる)
 (fset 'yes-or-no-p 'y-or-n-p)        ; (yes/no) を (y/n)に
 (define-key global-map (kbd "C-^") 'help-command) ; terminal接続時にはC-hがBSになるのでC-^をとっておく
-
+(setq confirm-kill-processes nil) ;終了時processが残っていても問い合わせない 25以上でないと動かない
 
 ;;; バックアップファイルを~/.emacs.d/backupへ
 (unless (file-exists-p (expand-file-name "~/.emacs.d/backup")) (make-directory (expand-file-name "~/.emacs.d/backup")))
@@ -539,13 +506,12 @@ locate PACKAGE."
 
 ;;;カーソル位置を記憶
 ;;; 一度 M-x toggle-save-placeを実行しないと動かない？
-;;; enable saveplace
 (if (and (>= emacs-major-version 24) (>= emacs-minor-version 5))
     (progn (require 'saveplace) (setq-default save-place t));; For GNU Emacs 24.5 and older versions.
   (save-place-mode 1)) ;; For GNU Emacs 25.1 and newer versions.
 
 
-;;; tab全角スペース可視化
+;;; tab全角スペース可視化（赤いので普段から使わなくなる）
 (global-whitespace-mode 1)
 (setq whitespace-space-regexp "\\(\u3000\\)")
 (setq whitespace-style '(face tabs tab-mark spaces space-mark))
@@ -557,24 +523,27 @@ locate PACKAGE."
 (set-face-underline  'whitespace-space t)
 
 
-
 ;;;プログラム記述系の共通設定
 ;; モード毎に設定したほうが良いかも
 (setq-default indent-tabs-mode nil) ;; tabは使ない
-(setq-default tab-width 2) ;; インデントは2文字
+(setq-default tab-width 2) ;; インデントは2文字(pythonのルールと衝突してる)
 (add-hook 'before-save-hook 'delete-trailing-whitespace) ;;行末スペースをsave時に自動削除
 
+
 ;;; flycheck
-(unless (require 'flycheck nil t) (package-install 'flycheck))
-(add-hook 'after-init-hook #'global-flycheck-mode)
-(unless (require 'flycheck-pos-tip nil t) (package-install 'flycheck-pos-tip)) ;; pos-tipでエラーを表示
+(when (maybe-require-package 'flycheck)
+  (add-hook 'after-init-hook #'global-flycheck-mode)
+  (when window-system
+    (maybe-require-package 'flycheck-pos-tip));; pos-tipでエラーを表示
+  )
+
 
 ;; C-mode
 ;;;https://qiita.com/sune2/items/c040171a0e377e1400f6 でc/c++の補完ができる
-
+;; まだいいか・・・
 
 ;;; js2-mode
-;; https://qiita.com/sune2/items/e54bb5db129ae73d004b を見てもっと補完を頑張る nodejsでternサーバが必要（ポータビリティが落ちる）
+;; https://qiita.com/sune2/items/e54bb5db129ae73d004b
 ;; https://emacs.cafe/emacs/javascript/setup/2017/04/23/emacs-setup-javascript.html タグジャンプはここにある ctags不要
 (unless (require 'js2-mode nil t) (package-install 'js2-mode))
 (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
@@ -800,6 +769,8 @@ locate PACKAGE."
       (select-window (next-window)) ;;もとに戻る
       ))
 
+
+  ;; inf-ruby起動時のinf-rubyバッファをpopwinに対応させる
   (add-hook
    'ruby-mode-hook
    (lambda ()
@@ -1126,6 +1097,11 @@ locate PACKAGE."
 
   ;; リージョンの色を変える
   (set-face-background 'region "SeaGreen")
+
+  ;; mode-line (powerline)
+  (when (maybe-require-package 'powerline)
+    (powerline-default-theme)) ;;とりあえずデフォルト
+
   )
 
 ;; Windows
@@ -1160,10 +1136,6 @@ locate PACKAGE."
 
 ;; Linux
 (when (and window-system (eq system-type 'gnu/linux))
-  ;;(unless (require 'mozc nil t) (package-install 'mozc))
-  ;;(setq default-input-method "japanese-mozc")
-  ;;(setq default-input-method "japanese-mozc")
-  ;;(define-key global-map [zenkaku-hankaku] 'toggle-input-method)
 
   (setq x-select-enable-primary t)
   ;;(setq x-select-enable-clipboard nil)
@@ -1177,17 +1149,16 @@ locate PACKAGE."
   ;; (cd ~/.emacs.d/; wget https://img.atwikiimg.com/www11.atwiki.jp/s-irie/attach/21/95/ibus-el-0.3.2.tar.gz ;tar xf ibus-el-0.3.2.tar.gz ibus-el-0.3.2/ibus.el ibus-el-0.3.2/ibus-el-agent )
   ;; echo 'Emacs*useXIM: false' >> ~/.Xresources
   ;; xrdb ~/.Xresources
-  (when (file-exists-p (expand-file-name "~/.emacs.d/ibus-el-0.3.2/ibus.el"))
-    "" ;
-    ;; (require 'ibus)
-    ;; (add-hook 'after-init-hook 'ibus-mode-on)
-    ;; (ibus-define-common-key ?\C-\s nil);; C-SPC は Set Mark に使う
-    ;; (setq ibus-cursor-color '("red" "blue" "limegreen"));; IBusの状態によってカーソル色を変化させる
-    ;; (ibus-define-common-key ?\C-j t);; C-j で半角英数モードをトグルする
-    ;; (setq ibus-prediction-window-position t);; カーソルの位置に予測候補を表示
-    ;; (setq ibus-undo-by-committed-string t);; Undo の時に確定した位置まで戻る
-    ;; (setq ibus-isearch-cursor-type 'hollow);; インクリメンタル検索中のカーソル形状を変更する
-    )
+  ;;(when (file-exists-p (expand-file-name "~/.emacs.d/ibus-el-0.3.2/ibus.el"))
+  ;; (require 'ibus)
+  ;; (add-hook 'after-init-hook 'ibus-mode-on)
+  ;; (ibus-define-common-key ?\C-\s nil);; C-SPC は Set Mark に使う
+  ;; (setq ibus-cursor-color '("red" "blue" "limegreen"));; IBusの状態によってカーソル色を変化させる
+  ;; (ibus-define-common-key ?\C-j t);; C-j で半角英数モードをトグルする
+  ;; (setq ibus-prediction-window-position t);; カーソルの位置に予測候補を表示
+  ;; (setq ibus-undo-by-committed-string t);; Undo の時に確定した位置まで戻る
+  ;; (setq ibus-isearch-cursor-type 'hollow);; インクリメンタル検索中のカーソル形状を変更する
+  ;;)
 
   ;; ime linuxのみ mozcで入力
   ;;http://d.hatena.ne.jp/kitokitoki/20120925/p2
@@ -1195,37 +1166,6 @@ locate PACKAGE."
   ;;LANG=ja_JP.UTF-8  /usr/lib/mozc/mozc_tool -mode=config_dialog
   ;;https://yo.eki.do/notes/emacs-windows-2017
   )
-
-;; mode-line (powerline)
-(when window-system
-  (unless (require 'powerline nil t) (package-install 'power-line))
-  (powerline-default-theme) ;;とりあえずデフォルト
-
- ;; helmのモードラインを変更しようとしたがうまく行っていない。
-;;  (defadvice helm-display-mode-line (after spaceline-helm)
-;;    "Set up a custom helm modeline."
-;;    (setq spaceline--helm-current-source source
-;;          mode-line-format '("%e" (:eval (spaceline--prepare
-;;                                          '(helm-buffer-id
-;;                                            helm-number
-;;                                            helm-follow
-;;                                            helm-prefix-argument)
-;;                                          '(helm-help)))))
-;;    (when force (force-mode-line-update)))
-;;
-;;  (define-minor-mode spaceline-helm-mode
-;;    "Customize the mode-line in helm."
-;;    :init-value nil
-;;    :global t
-;;    ;; (if (setq )paceline-helm-mode
-;;    ;;     (advice-add 'helm-display-mode-line :after 'spaceline-helm)
-;;    ;;   (advice-(region-end)move 'helm-display-mode-line 'spaceline-helm))
-;;    (if spaceline-helm-mode
-;;        (ad-activate 'helm-display-mode-line)
-;;      (ad-deactivate 'helm-display-mode-line)))
-;;
-  )
-
 
 
 ;; font
