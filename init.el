@@ -19,6 +19,9 @@
 ;; オリジナルの .elを持ってきたいときには以下を入れる
 ;;(setq load-path (cons (expand-file-name "~/.emacs.d/site-lisp/") load-path))
 
+;; wslのときこれをしないと表示が出ないそのうちwslかどうか判定する /proc/version -> Microsoft
+(when (and window-system (eq system-type 'gnu/linux))
+  (modify-frame-parameters nil '((inhibit-double-buffering . t))))
 
 ;;; package.el
 ;;; http://qiita.com/tadsan/items/6c658cc471be61cbc8f6 を参考にするといい
@@ -116,6 +119,7 @@ locate PACKAGE."
   (push '("^\*helm .+\*$"  :regexp t :height 0.4)   popwin:special-display-config)
   (push '("^\magit.+\$" :regexp t) popwin:special-display-config)
   (push '("^\*magit.+\$" :regexp t) popwin:special-display-config)
+  (push '("COMMIT_EDITMSG") popwin:special-display-config)
   ;;(push '("*undo-tree*") popwin:special-display-config) ;; うまく動かないもともとC-gでundotreeがうごいているのでいいか
   (push '("^\*Org-Babel.*\$" :regexp t) popwin:special-display-config))
 
